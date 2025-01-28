@@ -1,0 +1,1582 @@
+---
+title: "QMRA TS"
+author: "Salvator Minani"
+date: "2024-08-10"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+## set seed to allow for reproducibility
+set.seed(264)
+```
+
+## number of iterations
+```{r}
+n <- 1e5
+```
+
+### PARAMETER VALUES
+## Number of pigs
+# Pig production (pigs slaughtered in Kilo) in Burundi
+```{r}
+production_pig<-11177000
+```
+
+## Pig carcass weight
+```{r}
+weight_pig<-22.5
+```
+
+## Number of pig slaughtered in Burundi
+```{r}
+Pig_slaughtered<-production_pig/weight_pig
+```
+
+### Number of pigs slaughtered from extensive and semi-intensive farms
+```{r}
+Ext_SE<-0.94
+Pig_ext_SE<-Pig_slaughtered*Ext_SE
+```
+
+### Number of pigs slaughtered from intensive farms
+```{r}
+Int<-0.06
+Pig_Int<-Pig_slaughtered*Int
+```
+
+### Pigs slaughtered and consumed in the countryside
+```{r}
+Prop_countryside<-0.7
+Prop_pig_ext_rural<-Pig_ext_SE*Prop_countryside
+Prop_pig_int_rural<-Pig_Int*Prop_countryside
+Pigs_Cons_Countryside<-Prop_pig_ext_rural+Prop_pig_int_rural
+```
+
+### Pigs slaughtered and consumed in the city
+```{r}
+Prop_city<-0.3
+Prop_pig_ext_city<-Pig_ext_SE*Prop_city
+Prop_pig_int_city<-Pig_Int*Prop_city
+Pigs_cons_city<-Prop_pig_ext_city+Prop_pig_int_city
+```
+
+### Number of pigs slaughtered informally at home 
+```{r}
+### Pigs slaughtered informally at home in the countryside
+Prop_home_countryside<-0.27
+Pigs_slaug_inf_rural<-Pigs_Cons_Countryside*Prop_home_countryside
+### Pigs slaughtered informally in the city
+Prop_home_city<-0.12
+Pigs_slaug_inf_city<-Pigs_cons_city*Prop_home_city
+### Number of pigs slaughtered informally
+Total_pigs_inform<-Pigs_slaug_inf_rural+Pigs_slaug_inf_city
+```
+
+### Number of pigs formally slaughtered: 4 Groups 
+```{r}
+### Group 1: formally slaughtered in the countryside (extensive)
+A1<-Prop_pig_ext_rural*0.4
+A2<-Prop_pig_ext_rural*0.05
+A3<-Prop_pig_ext_rural*0.25
+A4<-Prop_pig_ext_rural*0.03
+Pig_slaug_form_ext_rural<-A1+A2+A3+A4
+### Group 2: formally slaughtered in the city (extensive)
+B1<-Prop_pig_ext_city*0.2
+B2<-Prop_pig_ext_city*0.08
+B3<-Prop_pig_ext_city*0.25
+B4<-Prop_pig_ext_city*0.35
+Pig_slaug_form_ext_city<-B1+B2+B3+B4
+### Group 3: formally slaughtered in the countryside (intensive)
+C1<-Prop_pig_int_rural*0.4
+C2<-Prop_pig_int_rural*0.05
+C3<-Prop_pig_int_rural*0.25
+C4<-Prop_pig_int_rural*0.03
+Pig_slaug_form_int_rural<-C1+C2+C3+C4
+### Group 4: formally slaughtered in the city (intensive)
+D1<-Prop_pig_int_city*0.2
+D2<-Prop_pig_int_city*0.08
+D3<-Prop_pig_int_city*0.25
+D4<-Prop_pig_int_city*0.35
+Pig_slaug_form_int_city<-D1+D2+D3+D4
+## total pigs formally
+Total_pigs_form<-Pig_slaug_form_ext_rural+Pig_slaug_form_ext_city+Pig_slaug_form_int_rural+Pig_slaug_form_int_city
+```
+
+### Portion (amount) of pork eaten, PERT distribution
+```{r}
+library(mc2d)
+min_pork <- 0.05  # Minimum value (a)
+mode_pork <- 0.125  # Most likely value (m)
+max_pork <- 0.2  # Maximum value (b)
+pert_pork <- rpert(n, min = min_pork, mode = mode_pork, max = max_pork)
+```
+
+### Number of pork meals for pig carcass
+```{r}
+meal_pig<-weight_pig/pert_pork
+```
+
+## Total meals per year
+```{r}
+Tot_meals<-Pig_slaughtered*meal_pig
+Tot_meal_form<-Total_pigs_form*meal_pig
+Tot_meal_inform<-Total_pigs_inform*meal_pig
+```
+
+### Probability pig is infected on pig farms (tongue palpation), Beta distribution
+```{r}
+## Overall prevalence TP
+TP_alpha<-77
+TP_beta <-496-77
+Prev_Tp<-rbeta(n, TP_alpha, TP_beta)
+True_prev_farm <-((Prev_Tp+1-1)/(0.5+1-1))
+## Prevalence for extensive pigs
+Ext_alpha<-56
+EXt_beta<-235-56
+Prev_ext_pig<-rbeta(n,Ext_alpha, EXt_beta)
+TP_Prev_ext<-((Prev_ext_pig+1-1)/(0.5+1-1))
+### Prevalence for intensive pigs
+Int_alpha<-21
+Int_beta<-261-21
+Prev_int_pig<-rbeta(n,Int_alpha, Int_beta)
+TP_Prev_int<-((Prev_int_pig+1-1)/(0.5+1-1))
+```
+
+### Probability pig is infected at slaughterhouse (MI), Beta distribution
+```{r}
+## overall prevalence
+MI_alpha<-14
+MI_beta<-576-14
+Prev_MI <-rbeta(n, MI_alpha, MI_beta)
+True_prev_slaughter<-((Prev_MI+1-1)/(0.17+1-1))
+### Prevalence for extensive (Kayanza+Ngozi)
+Ext_MI_alpha<-9
+Ext_MI_beta<-288-9
+Prev_ext_MI<-rbeta(n, Ext_MI_alpha,Ext_MI_beta)
+TP_Prev_ext_MI<-((Prev_ext_MI+1-1)/(0.17+1-1))
+### Prevalence for intensive
+Prev_int_MI<-Prev_ext_MI/3
+TP_Prev_int_MI<-TP_Prev_ext_MI/3
+```
+
+### INFECTION INTENSITY FOR INFECTED PIGS (Dissection data)
+### Probability pig is lightly infected at formal slaughter, Beta distribution
+```{r}
+Light_alpha <-46
+Light_beta <-67-46
+Light_Inf<-rbeta(n, Light_alpha, Light_beta)
+```
+
+### Probability pig is moderately infected at formal slaughter, Beta distribution
+```{r}
+Moderate_alpha <-9
+Moderate_beta <-67-9
+Moderate_Inf<-rbeta(n, Moderate_alpha,Moderate_beta)
+```
+
+## Probability pig is moderately infected at informal slaughter, PERT distribution
+```{r}
+library(mc2d)
+min_moder <- 0.15  # Minimum value (a)
+mode_moder <- 0.25  # Most likely value (m)
+max_moder <- 0.35  # Maximum value (b)
+Moder_inform <- rpert(n, min = min_moder, mode = mode_moder, max = max_moder)
+```
+
+### Probability pig is heavily infected at formal slaughter, Beta distribution
+```{r}
+Heavy_alpha <-12
+Heavy_beta <-67-12
+Heavy_Inf<-rbeta(n, Heavy_alpha,Heavy_beta)
+```
+
+### Probability pig is heavily infected at informal slaughter, PERT distribution
+```{r}
+min_heavy <- 0.15  # Minimum value (a)
+mode_heavy <- 0.35  # Most likely value (m)
+max_heavy <- 0.55  # Maximum value (b)
+Heavy_inform <- rpert(n, min = min_heavy, mode = mode_heavy, max = max_heavy)
+```
+
+### Probability pig is lightly infected at informal slaughter
+```{r}
+Light_inform <- 1- (Moder_inform+Heavy_inform)
+```
+
+## Probability pig infected is detected and condemned at formal slaughter, Beta distribution
+```{r}
+Condemned_alpha <-69
+Condemned_beta <-1359-69
+Condemned<-rbeta(n,Condemned_alpha, Condemned_beta)
+```
+
+### Probability that one pork meal contains one cysticercus /light
+```{r}
+Mean_Light_cyst<-24
+Pmeal1 <- 1 - exp(-Mean_Light_cyst/meal_pig) 
+```
+
+### Probability that one pork meal contains one cysticercus/moderate
+```{r}
+Mean_moderate_cyst<-588
+Pmeal2 <- 1 - exp(-Mean_moderate_cyst/meal_pig)
+```
+
+### Probability that one pork meal contains one cysticercus/heavy
+```{r}
+Mean_heavy_cyst<-4822
+Pmeal3 <- 1 - exp(-Mean_heavy_cyst/meal_pig)
+```
+
+### Probability that one cysticercus is viable, Beta distribution
+```{r}
+Viable_alpha<-4706
+Viable_beta<-5330-4706
+Viable_cyst<-rbeta(n, Viable_alpha, Viable_beta)
+```
+
+### Probability that one pork meal is eaten under-cooked, Beta distribution
+```{r}
+undercook_alpha<-25
+undercook_beta<-134-25
+undercooked<-rbeta(n, undercook_alpha, undercook_beta)
+```
+
+## Population of Burundi 
+```{r}
+Pop<-13097397
+```
+
+## Population eating meat
+```{r}
+Pop_meat<-0.194
+```
+
+## Population eating pork, Beta distribution
+```{r}
+pop_pork2_alpha<-100 # Based on the farmers answers on pork consumption (KAP)
+pop_pork2_beta<-122-100
+pop_pork2<-rbeta(n, pop_pork2_alpha,pop_pork2_beta)
+```
+
+### Total population eating pork
+```{r}
+Pop_eating_pork2<-Pop*Pop_meat*pop_pork2 #farmer's answers
+```
+
+### Proportion of population eating pork daily, Beta distribution
+```{r}
+## Farmer's answers
+Daily_pork2_alpha<-1
+Daily_pork2_beta<-100-1
+Daily_pork2<-rbeta(n, Daily_pork2_alpha, Daily_pork2_beta)
+```
+
+### Proportion of population eating pork weekly, Beta distribution
+```{r}
+# Farmer's answers
+Weekly_pork2_alpha<-13
+Weekly_pork2_beta<-100-13
+Weekly_pork2<-rbeta(n, Weekly_pork2_alpha, Weekly_pork2_beta)
+```
+
+### Proportion of population eating pork monthly, Beta distribution
+```{r}
+# Farmer's answers
+Month_pork2_alpha<-28
+Month_pork2_beta<-100-28
+Month_pork2<-rbeta(n, Month_pork2_alpha, Month_pork2_beta)
+```
+
+### Proportion of population eating pork annually, Beta distribution
+```{r}
+# Farmer's answers
+Year_porktot_alpha<-58
+Year_porktot_beta<-100-58
+Year_porktot<-rbeta(n, Year_porktot_alpha, Year_porktot_beta)
+
+### once a year
+Year_pork1_alpha<-18
+Year_pork1_beta<-100-18
+Year_pork1<-rbeta(n, Year_pork1_alpha, Year_pork1_beta)
+
+### twice a year
+Year_pork2_alpha<-20
+Year_pork2_beta<-100-20
+Year_pork2<-rbeta(n, Year_pork2_alpha, Year_pork2_beta)
+
+### three times a year (quarterly)
+Year_pork3_alpha<-10
+Year_pork3_beta<-100-10
+Year_pork3<-rbeta(n, Year_pork3_alpha, Year_pork3_beta)
+
+### six times a year
+Year_pork6_alpha<-10
+Year_pork6_beta<-100-10
+Year_pork6<-rbeta(n, Year_pork6_alpha, Year_pork6_beta)
+```
+
+#### Frequency of pork consumption per year
+```{r}
+daily<-365
+weekly<-52
+monthly<-12
+yearly_1<-1 # Once a year
+yearly_2<-2 #Twice a year
+Yearly_3<-3 # three times a year
+Yearly_6<-6 # six times a year
+```
+
+#### ESTIMATES 
+### HOME SLAUGHTER (16 scenarios)= PVC 1
+### Possibility 1: Pig from extensive-intensive systems informally slaughtered in the countryside/uninfected
+
+```{r}
+PS1<-Ext_SE*Prop_countryside*Prop_home_countryside*(1-TP_Prev_ext)
+PS2<-Int*Prop_countryside*Prop_home_countryside*(1-TP_Prev_int)
+```
+
+### Possibility 2 : Pig from extensive-intensive systems informally slaughtered in the city/uninfected
+```{r}
+PS3<-Ext_SE*Prop_city*Prop_home_city*(1-TP_Prev_ext)
+PS4<-Int*Prop_city*Prop_home_city*(1-TP_Prev_int)
+```
+
+## Possibility 3: Pig from extensive-intensive systems informally slaughtered in the countryside/lightly infected
+```{r}
+PS5<-Ext_SE*Prop_countryside*Prop_home_countryside*TP_Prev_ext*Light_inform
+PS6<-Int*Prop_countryside*Prop_home_countryside*TP_Prev_int*Light_inform
+```
+
+## Possibility 4: Pig from extensive-intensive systems informally slaughtered in the city/lightly infected
+```{r}
+PS7<-Ext_SE*Prop_city*Prop_home_city*TP_Prev_ext*Light_inform
+PS8<-Int*Prop_city*Prop_home_city*TP_Prev_int*Light_inform
+```
+
+## Possibility 5: Pig from extensive-intensive systems informally slaughtered in the countryside/moderately infected
+```{r}
+PS9<-Ext_SE*Prop_countryside*Prop_home_countryside*TP_Prev_ext*Moder_inform
+PS10<-Int*Prop_countryside*Prop_home_countryside*TP_Prev_int*Moder_inform
+```
+
+## Possibility 6: Pig from extensive-intensive systems informally slaughtered in the city/moderately infected
+```{r}
+PS11<-Ext_SE*Prop_city*Prop_home_city*TP_Prev_ext*Moder_inform
+PS12<-Int*Prop_city*Prop_home_city*TP_Prev_int*Moder_inform
+```
+
+## Possibility 7: Pig from extensive-intensive systems informally slaughtered in the countryside/heavily infected
+```{r}
+PS13<-Ext_SE*Prop_countryside*Prop_home_countryside*TP_Prev_ext*Heavy_inform
+PS14<-Int*Prop_countryside*Prop_home_countryside*TP_Prev_int*Heavy_inform
+```
+
+## Possibility 8: Pig from extensive-intensive systems informally slaughtered in the city/heavily infected
+```{r}
+PS15<-Ext_SE*Prop_city*Prop_home_city*TP_Prev_ext*Heavy_inform
+PS16<-Int*Prop_city*Prop_home_city*TP_Prev_int*Heavy_inform
+```
+
+#### FORMAL SLAUGHTER (112 scenarios)
+## Possibility 9: Pig from extensive-intensive systems formally slaughtered in the countryside/uninfected: type 1
+```{r}
+PS17<-Ext_SE*Prop_countryside*0.4*(1-TP_Prev_ext_MI)
+PS18<-Int*Prop_countryside*0.4*(1-TP_Prev_int_MI)
+```
+
+## Possibility 10: Pig from extensive-intensive systems formally slaughtered in the city/uninfected: type 1
+```{r}
+PS19<-Ext_SE*Prop_city*0.2*(1-TP_Prev_ext_MI)
+PS20<-Int*Prop_city*0.2*(1-TP_Prev_int_MI)
+```
+
+## Possibility 11: Pig from extensive-intensive systems formally slaughtered in the countryside/ lightly infected: type 1
+```{r}
+PS21<-Ext_SE*Prop_countryside*0.4*TP_Prev_ext_MI*Light_Inf*(1-(Condemned*0.25))
+PS22<-Ext_SE*Prop_countryside*0.4*TP_Prev_ext_MI*Light_Inf*(Condemned*0.25)
+PS23<-Int*Prop_countryside*0.4*TP_Prev_int_MI*Light_Inf*(1-(Condemned*0.25))
+PS24<-Int*Prop_countryside*0.4*TP_Prev_int_MI*Light_Inf*(Condemned*0.25)
+```
+
+## Possibility 12: Pig from extensive-intensive systems formally slaughtered in the city/ lightly infected: type 1
+```{r}
+PS25<-Ext_SE*Prop_city*0.2*TP_Prev_ext_MI*Light_Inf*(1-(Condemned*0.25))
+PS26<-Ext_SE*Prop_city*0.2*TP_Prev_ext_MI*Light_Inf*(Condemned*0.25)
+PS27<-Int*Prop_city*0.2*TP_Prev_int_MI*Light_Inf*(1-(Condemned*0.25))
+PS28<-Int*Prop_city*0.2*TP_Prev_int_MI*Light_Inf*(Condemned*0.25)
+```
+
+## Possibility 13: Pig from extensive-intensive systems formally slaughtered in the countryside/ moderately infected: type 1
+```{r}
+PS29<-Ext_SE*Prop_countryside*0.4*TP_Prev_ext_MI*Moderate_Inf*(1-(Condemned*0.25))
+PS30<-Ext_SE*Prop_countryside*0.4*TP_Prev_ext_MI*Moderate_Inf*(Condemned*0.25)
+PS31<-Int*Prop_countryside*0.4*TP_Prev_int_MI*Moderate_Inf*(1-(Condemned*0.25))
+PS32<-Int*Prop_countryside*0.4*TP_Prev_int_MI*Moderate_Inf*(Condemned*0.25)
+```
+
+## Possibility 14: Pig from extensive-intensive systems formally slaughtered in the city/ moderately infected: type 1
+```{r}
+PS33<-Ext_SE*Prop_city*0.2*TP_Prev_ext_MI*Moderate_Inf*(1-(Condemned*0.25))
+PS34<-Ext_SE*Prop_city*0.2*TP_Prev_ext_MI*Moderate_Inf*(Condemned*0.25)
+PS35<-Int*Prop_city*0.2*TP_Prev_int_MI*Moderate_Inf*(1-(Condemned*0.25))
+PS36<-Int*Prop_city*0.2*TP_Prev_int_MI*Moderate_Inf*(Condemned*0.25)
+```
+
+## Possibility 15: Pig from extensive-intensive systems formally slaughtered in the countryside/ heavily infected: type 1
+```{r}
+PS37<-Ext_SE*Prop_countryside*0.4*TP_Prev_ext_MI*Heavy_Inf*(1-(Condemned*0.25))
+PS38<-Ext_SE*Prop_countryside*0.4*TP_Prev_ext_MI*Heavy_Inf*(Condemned*0.25)
+PS39<-Int*Prop_countryside*0.4*TP_Prev_int_MI*Heavy_Inf*(1-(Condemned*0.25))
+PS40<-Int*Prop_countryside*0.4*TP_Prev_int_MI*Heavy_Inf*(Condemned*0.25)
+```
+
+## Possibility 16: Pig from extensive-intensive systems formally slaughtered in the city/ heavily infected: type 1
+```{r}
+PS41<-Ext_SE*Prop_city*0.2*TP_Prev_ext_MI*Heavy_Inf*(1-(Condemned*0.25))
+PS42<-Ext_SE*Prop_city*0.2*TP_Prev_ext_MI*Heavy_Inf*(Condemned*0.25)
+PS43<-Int*Prop_city*0.2*TP_Prev_int_MI*Heavy_Inf*(1-(Condemned*0.25))
+PS44<-Int*Prop_city*0.2*TP_Prev_int_MI*Heavy_Inf*(Condemned*0.25)
+Sc1_F_B_Cde_risk<-PS21+PS23+PS29+PS31+PS37+PS39
+Sc1_F_B_Cde<-PS17+PS18+PS22+PS24+PS30+PS32+PS38+PS40
+Sc1_F_B_City_risk<-PS25+PS27+PS33+PS35+PS41+PS43
+Sc1_F_B_City<-PS19+PS20+PS26+PS28+PS34+PS36+PS42+PS44
+```
+
+### Possibility 17: Pig from extensive-intensive systems formally slaughtered in the countryside/ uninfected: type 2
+```{r}
+PS45<-Ext_SE*Prop_countryside*0.05*(1-TP_Prev_ext_MI)
+PS46<-Int*Prop_countryside*0.05*(1-TP_Prev_int_MI)
+```
+
+### Possibility 18: Pig from extensive-intensive systems formally slaughtered in the city/ uninfected: type 2
+```{r}
+PS47<-Ext_SE*Prop_city*0.08*(1-TP_Prev_ext_MI)
+PS48<-Int*Prop_city*0.08*(1-TP_Prev_int_MI)
+```
+
+### Possibility 19: Pig from extensive-intensive systems formally slaughtered in the countside/ light infected: type 2
+```{r}
+PS49<-Ext_SE*Prop_countryside*0.05*TP_Prev_ext_MI*Light_Inf*(1-(Condemned*0.5))
+PS50<-Ext_SE*Prop_countryside*0.05*TP_Prev_ext_MI*Light_Inf*(Condemned*0.5)
+PS51<-Int*Prop_countryside*0.05*TP_Prev_int_MI*Light_Inf*(1-(Condemned*0.5))
+PS52<-Int*Prop_countryside*0.05*TP_Prev_int_MI*Light_Inf*(Condemned*0.5)
+```
+
+### Possibility 20: Pig from extensive-intensive systems formally slaughtered in the city/ light infected: type 2
+```{r}
+PS53<-Ext_SE*Prop_city*0.08*TP_Prev_ext_MI*Light_Inf*(1-(Condemned*1))
+PS54<-Ext_SE*Prop_city*0.08*TP_Prev_ext_MI*Light_Inf*(Condemned*1)
+PS55<-Int*Prop_city*0.08*TP_Prev_int_MI*Light_Inf*(1-(Condemned*1))
+PS56<-Int*Prop_city*0.08*TP_Prev_int_MI*Light_Inf*(Condemned*1)
+```
+
+### Possibility 21: Pig from extensive-intensive systems formally slaughtered in the countryside/ moderately infected: type 2
+```{r}
+PS57<-Ext_SE*Prop_countryside*0.05*TP_Prev_ext_MI*Moderate_Inf*(1-(Condemned*0.5))
+PS58<-Ext_SE*Prop_countryside*0.05*TP_Prev_ext_MI*Moderate_Inf*(Condemned*0.5)
+PS59<-Int*Prop_countryside*0.05*TP_Prev_int_MI*Moderate_Inf*(1-(Condemned*0.5))
+PS60<-Int*Prop_countryside*0.05*TP_Prev_int_MI*Moderate_Inf*(Condemned*0.5)
+```
+
+### Possibility 22: Pig from extensive-intensive systems formally slaughtered in the city/ moderately infected: type 2
+```{r}
+PS61<-Ext_SE*Prop_city*0.08*TP_Prev_ext_MI*Moderate_Inf*(1-(Condemned*1))
+PS62<-Ext_SE*Prop_city*0.08*TP_Prev_ext_MI*Moderate_Inf*(Condemned*1)
+PS63<-Int*Prop_city*0.08*TP_Prev_int_MI*Moderate_Inf*(1-(Condemned*1))
+PS64<-Int*Prop_city*0.08*TP_Prev_int_MI*Moderate_Inf*(Condemned*1)
+```
+
+### Possibility 23: Pig from extensive-intensive systems formally slaughtered in the countryside/ heavliy infected: type 2
+```{r}
+PS65<-Ext_SE*Prop_countryside*0.05*TP_Prev_ext_MI*Heavy_Inf*(1-(Condemned*0.5))
+PS66<-Ext_SE*Prop_countryside*0.05*TP_Prev_ext_MI*Heavy_Inf*(Condemned*0.5)
+PS67<-Int*Prop_countryside*0.05*TP_Prev_int_MI*Heavy_Inf*(1-(Condemned*0.5))
+PS68<-Int*Prop_countryside*0.05*TP_Prev_int_MI*Heavy_Inf*(Condemned*0.5)
+```
+
+### Possibility 24: Pig from extensive-intensive systems formally slaughtered in the city/ heavliy infected: type 2
+```{r}
+PS69<-Ext_SE*Prop_city*0.08*TP_Prev_ext_MI*Heavy_Inf*(1-(Condemned*1))
+PS70<-Ext_SE*Prop_city*0.08*TP_Prev_ext_MI*Heavy_Inf*(Condemned*1)
+PS71<-Int*Prop_city*0.08*TP_Prev_int_MI*Heavy_Inf*(1-(Condemned*1))
+PS72<-Int*Prop_city*0.08*TP_Prev_int_MI*Heavy_Inf*(Condemned*1)
+
+SC2_F_S_Cde_risk<-PS49+PS51+PS57+PS59+PS65+PS67
+SC2_F_S_Cde<-PS45+PS46+PS50+PS52+PS58+PS60+PS66+PS68
+SC2_F_S_City_risk<-PS53+PS55+PS61+PS63+PS69+PS71
+SC2_F_S_City<-PS47+PS48+PS54+PS56+PS62+PS64+PS70+PS72
+```
+
+### Possibility 25: Pig from extensive-intensive systems formally slaughtered in the countryside/ Uninfected: type 3
+```{r}
+PS73<-Ext_SE*Prop_countryside*0.25*(1-TP_Prev_ext_MI)
+PS74<-Int*Prop_countryside*0.25*(1-TP_Prev_int_MI)
+```
+
+### Possibility 26: Pig from extensive-intensive systems formally slaughtered in the city/ Uninfected: type 3
+```{r}
+PS75<-Ext_SE*Prop_city*0.25*(1-TP_Prev_ext_MI)
+PS76<-Int*Prop_city*0.25*(1-TP_Prev_int_MI)
+```
+
+### Possibility 27: Pig from extensive-intensive systems formally slaughtered in the countryside/ lightly infected: type 3
+```{r}
+PS77<-Ext_SE*Prop_countryside*0.25*TP_Prev_ext_MI*Light_Inf*(1-(Condemned*0.5))
+PS78<-Ext_SE*Prop_countryside*0.25*TP_Prev_ext_MI*Light_Inf*(Condemned*0.5)
+PS79<-Int*Prop_countryside*0.25*TP_Prev_int_MI*Light_Inf*(1-(Condemned*0.5))
+PS80<-Int*Prop_countryside*0.25*TP_Prev_int_MI*Light_Inf*(Condemned*0.5)
+```
+
+### Possibility 28: Pig from extensive-intensive systems formally slaughtered in the city/ lightly infected: type 3
+```{r}
+PS81<-Ext_SE*Prop_city*0.25*TP_Prev_ext_MI*Light_Inf*(1-(Condemned*0.5))
+PS82<-Ext_SE*Prop_city*0.25*TP_Prev_ext_MI*Light_Inf*(Condemned*0.5)
+PS83<-Int*Prop_city*0.25*TP_Prev_int_MI*Light_Inf*(1-(Condemned*0.5))
+PS84<-Int*Prop_city*0.25*TP_Prev_int_MI*Light_Inf*(Condemned*0.5)
+```
+
+### Possibility 29: Pig from extensive-intensive systems formally slaughtered in the countryside/ moderately infected: type 3
+```{r}
+PS85<-Ext_SE*Prop_countryside*0.25*TP_Prev_ext_MI*Moderate_Inf*(1-(Condemned*0.5))
+PS86<-Ext_SE*Prop_countryside*0.25*TP_Prev_ext_MI*Moderate_Inf*(Condemned*0.5)
+PS87<-Int*Prop_countryside*0.25*TP_Prev_int_MI*Moderate_Inf*(1-(Condemned*0.5))
+PS88<-Int*Prop_countryside*0.25*TP_Prev_int_MI*Moderate_Inf*(Condemned*0.5)
+```
+
+### Possibility 30: Pig from extensive-intensive systems formally slaughtered in the city/ moderately infected: type 3
+```{r}
+PS89<-Ext_SE*Prop_city*0.25*TP_Prev_ext_MI*Moderate_Inf*(1-(Condemned*0.5))
+PS90<-Ext_SE*Prop_city*0.25*TP_Prev_ext_MI*Moderate_Inf*(Condemned*0.5)
+PS91<-Int*Prop_city*0.25*TP_Prev_int_MI*Moderate_Inf*(1-(Condemned*0.5))
+PS92<-Int*Prop_city*0.25*TP_Prev_int_MI*Moderate_Inf*(Condemned*0.5)
+```
+
+### Possibility 31: Pig from extensive-intensive systems formally slaughtered in the countryside/ heavily infected: type 3
+```{r}
+PS93<-Ext_SE*Prop_countryside*0.25*TP_Prev_ext_MI*Heavy_Inf*(1-(Condemned*0.5))
+PS94<-Ext_SE*Prop_countryside*0.25*TP_Prev_ext_MI*Heavy_Inf*(Condemned*0.5)
+PS95<-Int*Prop_countryside*0.25*TP_Prev_int_MI*Heavy_Inf*(1-(Condemned*0.5))
+PS96<-Int*Prop_countryside*0.25*TP_Prev_int_MI*Heavy_Inf*(Condemned*0.5)
+```
+
+### Possibility 32: Pig from extensive-intensive systems formally slaughtered in the city/ heavily infected: type 3
+```{r}
+PS97<-Ext_SE*Prop_city*0.25*TP_Prev_ext_MI*Heavy_Inf*(1-(Condemned*0.5))
+PS98<-Ext_SE*Prop_city*0.25*TP_Prev_ext_MI*Heavy_Inf*(Condemned*0.5)
+PS99<-Int*Prop_city*0.25*TP_Prev_int_MI*Heavy_Inf*(1-(Condemned*0.5))
+PS100<-Int*Prop_city*0.25*TP_Prev_int_MI*Heavy_Inf*(Condemned*0.5)
+
+SC3_F_B_S_Cde_risk<-PS77+PS79+PS85+PS87+PS93+PS95
+SC3_F_B_S_Cde<-PS73+PS74+PS78+PS80+PS86+PS88+PS92+PS94
+SC3_F_B_S_City_risk<-PS81+PS83+PS89+PS91+PS97+PS99
+SC3_F_B_S_City<-PS75+PS76+PS82+PS84+PS90+PS92+PS98+PS100
+```
+
+### Possibility 33: Pig from extensive-intensive systems formally slaughtered in the countryside/ Uninfected: type 4
+```{r}
+PS101<-Ext_SE*Prop_countryside*0.03*(1-TP_Prev_ext_MI)
+PS102<-Int*Prop_countryside*0.03*(1-TP_Prev_int_MI)
+```
+
+### Possibility 34: Pig from extensive-intensive systems formally slaughtered in the city/ Uninfected: type 4
+```{r}
+PS103<-Ext_SE*Prop_city*0.35*(1-TP_Prev_ext_MI)
+PS104<-Int*Prop_city*0.35*(1-TP_Prev_int_MI)
+```
+### Possibility 35: Pig from extensive-intensive systems formally slaughtered in the countryside/ light infected: type 4
+```{r}
+PS105<-Ext_SE*Prop_countryside*0.03*TP_Prev_ext_MI*Light_Inf*(1-(Condemned*0.5))
+PS106<-Ext_SE*Prop_countryside*0.03*TP_Prev_ext_MI*Light_Inf*(Condemned*0.5)
+PS107<-Int*Prop_countryside*0.03*TP_Prev_int_MI*Light_Inf*(1-(Condemned*0.5))
+PS108<-Int*Prop_countryside*0.03*TP_Prev_int_MI*Light_Inf*(Condemned*0.5)
+```
+
+### Possibility 36: Pig from extensive-intensive systems formally slaughtered in the city/ light infected: type 4
+```{r}
+PS109<-Ext_SE*Prop_city*0.35*TP_Prev_ext_MI*Light_Inf*(1-(Condemned*1))
+PS110<-Ext_SE*Prop_city*0.35*TP_Prev_ext_MI*Light_Inf*(Condemned*1)
+PS111<-Int*Prop_city*0.35*TP_Prev_int_MI*Light_Inf*(1-(Condemned*1))
+PS112<-Int*Prop_city*0.35*TP_Prev_int_MI*Light_Inf*(Condemned*1)
+```
+
+### Possibility 37: Pig from extensive-intensive systems formally slaughtered in the countryside/moderately infected: type 4
+```{r}
+PS113<-Ext_SE*Prop_countryside*0.03*TP_Prev_ext_MI*Moderate_Inf*(1-(Condemned*0.5))
+PS114<-Ext_SE*Prop_countryside*0.03*TP_Prev_ext_MI*Moderate_Inf*(Condemned*0.5)
+PS115<-Int*Prop_countryside*0.03*TP_Prev_int_MI*Moderate_Inf*(1-(Condemned*0.5))
+PS116<-Int*Prop_countryside*0.03*TP_Prev_int_MI*Moderate_Inf*(Condemned*0.5)
+```
+
+### Possibility 38: Pig from extensive-intensive systems formally slaughtered in the city/ moderately infected: type 4
+```{r}
+PS117<-Ext_SE*Prop_city*0.35*TP_Prev_ext_MI*Moderate_Inf*(1-(Condemned*1))
+PS118<-Ext_SE*Prop_city*0.35*TP_Prev_ext_MI*Moderate_Inf*(Condemned*1)
+PS119<-Int*Prop_city*0.35*TP_Prev_int_MI*Moderate_Inf*(1-(Condemned*1))
+PS120<-Int*Prop_city*0.35*TP_Prev_int_MI*Moderate_Inf*(Condemned*1)
+```
+
+### Possibility 39: Pig from extensive-intensive systems formally slaughtered in the countryside/ heavily infected: type 4
+```{r}
+PS121<-Ext_SE*Prop_countryside*0.03*TP_Prev_ext_MI*Heavy_Inf*(1-(Condemned*0.5))
+PS122<-Ext_SE*Prop_countryside*0.03*TP_Prev_ext_MI*Heavy_Inf*(Condemned*0.5)
+PS123<-Int*Prop_countryside*0.03*TP_Prev_int_MI*Heavy_Inf*(1-(Condemned*0.5))
+PS124<-Int*Prop_countryside*0.03*TP_Prev_int_MI*Heavy_Inf*(Condemned*0.5)
+```
+
+### Possibility 40: Pig from extensive-intensive systems formally slaughtered in the city/heavily infected: type 4
+```{r}
+PS125<-Ext_SE*Prop_city*0.35*TP_Prev_ext_MI*Heavy_Inf*(1-(Condemned*1))
+PS126<-Ext_SE*Prop_city*0.35*TP_Prev_ext_MI*Heavy_Inf*(Condemned*1)
+PS127<-Int*Prop_city*0.35*TP_Prev_int_MI*Heavy_Inf*(1-(Condemned*1))
+PS128<-Int*Prop_city*0.35*TP_Prev_int_MI*Heavy_Inf*(Condemned*1)
+
+SC4_F_B_S_Cde_risk<-PS105+PS107+PS113+PS115+PS121+PS123
+SC4_F_B_S_Cde_<-PS101+PS102+PS106+PS108+PS114+PS116+PS122+PS124
+SC4_F_B_S_City_risk<-PS109+PS111+PS117+PS119+PS125+PS127
+SC4_F_B_S_City<-PS103+PS104+PS110+PS112+PS118+PS120+PS126+PS128
+```
+
+### Total Infection informal slaughter
+```{r}
+Tot_Infection_inform_Cde<-PS5+PS6+PS9+PS10+PS13+PS14
+Tot_Infection_inform_City<-PS7+PS8+PS11+PS12+PS15+PS16
+Tot_uninfected_inform_Cde<-PS1+PS2
+Tot_uninfected_inform_city<-PS3+PS4
+Tot_inf_informal<-Tot_Infection_inform_Cde+Tot_Infection_inform_City
+```
+
+### Total Infection formal slaughter
+```{r}
+Tot_infection_form_Cde<-Sc1_F_B_Cde_risk+SC2_F_S_Cde_risk+SC3_F_B_S_City_risk+SC4_F_B_S_Cde_risk
+Tot_uninfected_form_Cde<-PS17+PS18+PS45+PS46+PS73+PS74+PS101+PS102
+Tot_uninfected_form_city<-PS19+PS20+PS47+PS48+PS75+PS76+PS103+PS104
+Tot_condem_form_Cde<-PS22+PS24+PS30+PS32+PS38+PS40+PS50+PS52+PS58+PS60+PS66+PS68+PS78+PS80+PS86+PS88+PS94+PS96+PS106+PS108+PS114+PS116+PS122+PS124
+Tot_condem_form_City<-PS26+PS28+PS34+PS36+PS42+PS44+PS54+PS56+PS62+PS64+PS70+PS72+PS82+PS84+PS90+PS92+PS98+PS100+PS110+PS112+PS118+PS120+PS126+PS128
+Tot_infection_form_City<-Sc1_F_B_City_risk+SC2_F_S_City_risk+SC3_F_B_S_City_risk+SC4_F_B_S_City_risk
+Tot_inf_formal<-Tot_infection_form_Cde+Tot_infection_form_City
+```
+
+### Probability any pork meal from informal Slaughter is infected (before cooking) in the countryside
+```{r}
+P_pork_inform_BC_ext_Cde<-(PS1*0*Viable_cyst)+(PS5*Pmeal1*Viable_cyst)+PS9*(Pmeal2*Viable_cyst)+(PS13*Pmeal3*Viable_cyst)
+P_pork_inform_BC_Int_Cde<-(PS2*0*Viable_cyst)+(PS6*Pmeal1*Viable_cyst)+(PS10*Pmeal2*Viable_cyst)+(PS14*Pmeal3*Viable_cyst)
+Total_inform_BC_Cde<-P_pork_inform_BC_ext_Cde+P_pork_inform_BC_Int_Cde
+```
+
+### Probability any pork meal from informal Slaughter is infected (before cooking) in the city
+```{r}
+P_pork_inform_BC_ext_city<-(PS3*0*Viable_cyst)+(PS7*Pmeal1*Viable_cyst)+(PS11*Pmeal2*Viable_cyst)+(PS15*Pmeal3*Viable_cyst)
+P_pork_inform_BC_Int_city<-(PS4*0*Viable_cyst)+(PS8*Pmeal1*Viable_cyst)+(PS12*Pmeal2*Viable_cyst)+(PS16*Pmeal3*Viable_cyst)
+Total_inform_BC_city<-P_pork_inform_BC_ext_city+P_pork_inform_BC_Int_city
+## EXTENSIVE
+P_pork_inform_BC_ext<-P_pork_inform_BC_ext_Cde+P_pork_inform_BC_ext_city
+## INTENSIVE
+P_pork_inform_BC_Int<-P_pork_inform_BC_Int_Cde+P_pork_inform_BC_Int_city
+## Total informal slaughter
+Tot_prob_infec_Informal_BC<-Total_inform_BC_Cde+Total_inform_BC_city
+```
+
+### Probability any pork meal from formal Slaughter is infected (before cooking) in the countryside : TYPE1
+```{r}
+P_pork_form1_BC_ext_Cde<-(PS17*0*Viable_cyst)+(PS21*Pmeal1*Viable_cyst)+(PS22*0*Viable_cyst)+(PS29*Pmeal2*Viable_cyst)+(PS30*0*Viable_cyst)+(PS37*Pmeal3*Viable_cyst)+(PS38*0*Viable_cyst)
+P_pork_form1_BC_Int_Cde<-(PS18*0*Viable_cyst)+(PS23*Pmeal1*Viable_cyst)+(PS24*0*Viable_cyst)+(PS31*Pmeal2*Viable_cyst)+(PS32*0*Viable_cyst)+(PS39*Pmeal3*Viable_cyst)+(PS40*0*Viable_cyst)
+P_pork_form1_BC_Cde<-P_pork_form1_BC_ext_Cde+P_pork_form1_BC_Int_Cde
+```
+
+### Probability any pork meal from formal Slaughter is infected (before cooking) in the city:TYPE 1
+```{r}
+P_pork_form1_BC_ext_city<-(PS19*0*Viable_cyst)+(PS25*Pmeal1*Viable_cyst)+(PS26*0*Viable_cyst)+(PS33*Pmeal2*Viable_cyst)+(PS34*0*Viable_cyst)+(PS41*Pmeal3*Viable_cyst)+(PS42*0*Viable_cyst)
+P_pork_form1_BC_Int_city<-(PS20*0*Viable_cyst)+(PS27*Pmeal1*Viable_cyst)+(PS28*0*Viable_cyst)+(PS35*Pmeal2*Viable_cyst)+(PS36*0*Viable_cyst)+(PS43*Pmeal3*Viable_cyst)+(PS44*0*Viable_cyst)
+P_pork_form1_BC_city<-P_pork_form1_BC_ext_city+P_pork_form1_BC_Int_city
+P_pork_form1_BC_ext<-P_pork_form1_BC_ext_Cde+P_pork_form1_BC_ext_city
+P_pork_form1_BC_Int<-P_pork_form1_BC_Int_Cde+P_pork_form1_BC_Int_city
+Tot_P_pork_form1_BC<-P_pork_form1_BC_ext+P_pork_form1_BC_Int
+```
+
+### Probability any pork meal from formal Slaughter is infected (before cooking) in the countryside : TYPE2
+```{r}
+P_pork_form2_BC_ext_Cde<-(PS45*0*Viable_cyst)+(PS49*Pmeal1*Viable_cyst)+(PS50*0*Viable_cyst)+(PS57*Pmeal2*Viable_cyst)+(PS58*0*Viable_cyst)+(PS65*Pmeal3*Viable_cyst)+(PS66*0*Viable_cyst)
+P_pork_form2_BC_Int_Cde<-(PS46*0*Viable_cyst)+(PS51*Pmeal1*Viable_cyst)+(PS52*0*Viable_cyst)+(PS59*Pmeal2*Viable_cyst)+(PS60*0*Viable_cyst)+(PS67*Pmeal3*Viable_cyst)+(PS68*0*Viable_cyst)
+P_pork_form2_BC_Cde<-P_pork_form2_BC_ext_Cde+P_pork_form2_BC_Int_Cde
+```
+
+### Probability any pork meal from formal Slaughter is infected (before cooking) in the city : TYPE2
+```{r}
+P_pork_form2_BC_ext_city<-(PS47*0*Viable_cyst)+(PS53*Pmeal1*Viable_cyst)+(PS54*0*Viable_cyst)+(PS61*Pmeal2*Viable_cyst)+(PS62*0*Viable_cyst)+(PS69*Pmeal3*Viable_cyst)+(PS70*0*Viable_cyst)
+P_pork_form2_BC_Int_city<-(PS48*0*Viable_cyst)+(PS55*Pmeal1*Viable_cyst)+(PS56*0*Viable_cyst)+(PS63*Pmeal2*Viable_cyst)+(PS64*0*Viable_cyst)+(PS71*Pmeal3*Viable_cyst)+(PS72*0*Viable_cyst)
+P_pork_form2_BC_city<-P_pork_form2_BC_ext_city+P_pork_form2_BC_Int_city
+P_pork_form2_BC_ext<-P_pork_form2_BC_ext_Cde+P_pork_form2_BC_ext_city
+P_pork_form2_BC_Int<-P_pork_form2_BC_Int_Cde+P_pork_form2_BC_Int_city
+Tot_P_pork_form2_BC<-P_pork_form2_BC_ext+P_pork_form2_BC_Int
+```
+
+### Probability any pork meal from formal Slaughter is infected (before cooking) in the countryside: TYPE3
+```{r}
+P_pork_form3_BC_ext_Cde<-(PS73*0*Viable_cyst)+(PS77*Pmeal1*Viable_cyst)+(PS78*0*Viable_cyst)+(PS85*Pmeal2*Viable_cyst)+(PS86*0*Viable_cyst)+(PS93*Pmeal3*Viable_cyst)+(PS94*0*Viable_cyst)
+P_pork_form3_BC_Int_Cde<-(PS74*0*Viable_cyst)+(PS79*Pmeal1*Viable_cyst)+(PS80*0*Viable_cyst)+(PS87*Pmeal2*Viable_cyst)+(PS88*0*Viable_cyst)+(PS95*Pmeal3*Viable_cyst)+(PS96*0*Viable_cyst)
+P_pork_form3_BC_Cde<-P_pork_form3_BC_ext_Cde+P_pork_form3_BC_Int_Cde
+```
+
+### Probability any pork meal from formal Slaughter is infected (before cooking) in the city: TYPE3
+```{r}
+P_pork_form3_BC_ext_city<-(PS75*0*Viable_cyst)+(PS81*Pmeal1*Viable_cyst)+(PS82*0*Viable_cyst)+(PS89*Pmeal2*Viable_cyst)+(PS90*0*Viable_cyst)+(PS97*Pmeal3*Viable_cyst)+(PS98*0*Viable_cyst)
+P_pork_form3_BC_Int_city<-(PS76*0*Viable_cyst)+(PS83*Pmeal1*Viable_cyst)+(PS84*0*Viable_cyst)+(PS91*Pmeal2*Viable_cyst)+(PS92*0*Viable_cyst)+(PS99*Pmeal3*Viable_cyst)+(PS100*0*Viable_cyst)
+P_pork_form3_BC_city<-P_pork_form3_BC_ext_city+P_pork_form3_BC_Int_city
+P_pork_form3_BC_ext<-P_pork_form3_BC_ext_Cde+P_pork_form3_BC_ext_city
+P_pork_form3_BC_Int<-P_pork_form3_BC_Int_Cde+P_pork_form3_BC_Int_city
+Tot_P_pork_form3_BC<-P_pork_form3_BC_ext+P_pork_form3_BC_Int
+```
+
+### Probability any pork meal from formal Slaughter is infected (before cooking) in the countryside: TYPE4
+```{r}
+P_pork_form4_BC_ext_Cde<-(PS101*0*Viable_cyst)+(PS105*Pmeal1*Viable_cyst)+(PS106*0*Viable_cyst)+(PS113*Pmeal2*Viable_cyst)+(PS114*0*Viable_cyst)+(PS121*Pmeal3*Viable_cyst)+(PS122*0*Viable_cyst)
+P_pork_form4_BC_Int_Cde<-(PS102*0*Viable_cyst)+(PS107*Pmeal1*Viable_cyst)+(PS108*0*Viable_cyst)+(PS115*Pmeal2*Viable_cyst)+(PS116*0*Viable_cyst)+(PS123*Pmeal3*Viable_cyst)+(PS124*0*Viable_cyst)
+P_pork_form4_BC_Cde<-P_pork_form4_BC_ext_Cde+P_pork_form4_BC_Int_Cde
+```
+
+### Probability any pork meal from formal Slaughter is infected (before cooking) in the city: TYPE4
+```{r}
+P_pork_form4_BC_ext_city<-(PS103*0*Viable_cyst)+(PS109*Pmeal1*Viable_cyst)+(PS110*0*Viable_cyst)+(PS117*Pmeal2*Viable_cyst)+(PS118*0*Viable_cyst)+(PS125*Pmeal3*Viable_cyst)+(PS126*0*Viable_cyst)
+P_pork_form4_BC_Int_city<-(PS104*0*Viable_cyst)+(PS111*Pmeal1*Viable_cyst)+(PS112*0*Viable_cyst)+(PS119*Pmeal2*Viable_cyst)+(PS120*0*Viable_cyst)+(PS127*Pmeal3*Viable_cyst)+(PS128*0*Viable_cyst)
+P_pork_form4_BC_city<-P_pork_form4_BC_ext_city+P_pork_form4_BC_Int_city
+P_pork_form4_BC_ext<-P_pork_form4_BC_ext_Cde+P_pork_form4_BC_ext_city
+P_pork_form4_BC_Int<-P_pork_form4_BC_Int_Cde+P_pork_form4_BC_Int_city
+Tot_P_pork_form4_BC<-P_pork_form4_BC_ext+P_pork_form4_BC_Int
+```
+
+### Total risk for formal slaughter before cooking
+```{r}
+## Total countryside
+Tot_P_pork_BC_Cde<-P_pork_form1_BC_Cde+P_pork_form2_BC_Cde+P_pork_form3_BC_Cde+P_pork_form4_BC_Cde
+## Total city
+Tot_P_pork_BC_city<-P_pork_form1_BC_city+P_pork_form2_BC_city+P_pork_form3_BC_city+P_pork_form4_BC_city
+## extensive and intensive
+Tot_P_pork_BC_ext<-P_pork_form1_BC_ext+P_pork_form2_BC_ext+P_pork_form3_BC_ext+ P_pork_form4_BC_ext
+Tot_P_pork_BC_int<-P_pork_form1_BC_Int+P_pork_form2_BC_Int+P_pork_form3_BC_Int+P_pork_form4_BC_Int
+## Total formal slaughter
+Tot_prob_infec_formal_BC<-Tot_P_pork_form1_BC+Tot_P_pork_form2_BC+Tot_P_pork_form3_BC+Tot_P_pork_form4_BC
+### Total risk formal and informal
+Tot_prob_infec_BC<-Tot_prob_infec_Informal_BC+Tot_prob_infec_formal_BC
+Tot_prob_infec_BC_cde<-Total_inform_BC_Cde+Tot_P_pork_BC_Cde
+Tot_prob_infec_BC_city<-Total_inform_BC_city+Tot_P_pork_BC_city
+Tot_prob_infec_BC_ext<-P_pork_inform_BC_ext+Tot_P_pork_BC_ext
+Tot_prob_infec_BC_Int<-P_pork_inform_BC_Int+Tot_P_pork_BC_int
+```
+
+### Number of meals is infective before cooking/raw meat
+```{r}
+N_Meals_infective_BC<-Tot_meals*Tot_prob_infec_BC
+N_Meals_infective_BC_form<-Tot_meals*Tot_prob_infec_formal_BC
+N_Meals_infective_BC_inform<-Tot_meals*Tot_prob_infec_Informal_BC
+N_Meals_infective_BC_ext<-Tot_meals*Tot_prob_infec_BC_ext
+N_Meals_infective_BC_int<-Tot_meals*Tot_prob_infec_BC_Int
+N_Meals_infective_BC_cde<-Tot_meals*Tot_prob_infec_BC_cde
+N_Meals_infective_BC_city<-Tot_meals*Tot_prob_infec_BC_city
+N_meal_condemned_cde<-Tot_meals*Tot_condem_form_Cde
+N_meal_condemned_city<-Tot_meals*Tot_condem_form_City
+N_meal_condemned<-N_meal_condemned_cde+N_meal_condemned_city
+```
+
+### Probability any pork meal from informal Slaughter is infected (after cooking) in the countryside and city
+```{r}
+### Countryside
+P_pork_inform_AC_ext_Cde<-P_pork_inform_BC_ext_Cde*undercooked
+P_pork_inform_AC_Int_Cde<-P_pork_inform_BC_Int_Cde*undercooked
+Total_inform_AC_Cde<-P_pork_inform_AC_ext_Cde+P_pork_inform_AC_Int_Cde
+### CITY
+P_pork_inform_AC_ext_city<-P_pork_inform_BC_ext_city*undercooked
+P_pork_inform_AC_Int_city<-P_pork_inform_BC_Int_city*undercooked
+Total_inform_AC_city<-P_pork_inform_AC_ext_city+P_pork_inform_AC_Int_city
+## extensive
+Tot_prob_infec_Inform_AC_ext<-P_pork_inform_AC_ext_Cde+P_pork_inform_AC_ext_city
+## intensive
+Tot_prob_infec_Inform_AC_Int<-P_pork_inform_AC_Int_Cde+P_pork_inform_AC_Int_city
+### Overall informal slaughter
+Tot_prob_infec_Informal_AC<-Tot_prob_infec_Inform_AC_ext+Tot_prob_infec_Inform_AC_Int
+```
+
+## Probability any pork meal from formal Slaughter is infected (after cooking) in the countryside and city: type 1
+```{r}
+## COUNTRYSIDE
+P_pork_form1_AC_ext_Cde<-P_pork_form1_BC_ext_Cde*undercooked
+P_pork_form1_AC_Int_Cde<-P_pork_form1_BC_Int_Cde*undercooked
+Tot_form1_AC_Cde<-P_pork_form1_AC_ext_Cde+P_pork_form1_AC_Int_Cde
+### CITY
+P_pork_form1_AC_ext_city<-P_pork_form1_BC_ext_city*undercooked
+P_pork_form1_AC_Int_city<-P_pork_form1_BC_Int_city*undercooked
+Tot_form1_AC_city<-P_pork_form1_AC_ext_city+P_pork_form1_AC_Int_city
+## EXtensive AND intensive
+P_pork_form1_AC_ext<-P_pork_form1_AC_ext_Cde+P_pork_form1_AC_ext_city
+P_pork_form1_AC_Int<-P_pork_form1_AC_Int_Cde+P_pork_form1_AC_Int_city
+Tot_P_pork_form1_AC<-P_pork_form1_AC_ext+P_pork_form1_AC_Int
+```
+
+## Probability any pork meal from formal Slaughter is infected (after cooking) in the countryside and city: type 2
+```{r}
+## Countryside
+P_pork_form2_AC_ext_Cde<-P_pork_form2_BC_ext_Cde*undercooked
+P_pork_form2_AC_Int_Cde<-P_pork_form2_BC_Int_Cde*undercooked
+Tot_form2_AC_Cde<-P_pork_form2_AC_ext_Cde+P_pork_form2_AC_Int_Cde
+### CITY
+P_pork_form2_AC_ext_city<-P_pork_form2_BC_ext_city*undercooked
+P_pork_form2_AC_Int_city<-P_pork_form2_BC_Int_city*undercooked
+Tot_form2_AC_city<-P_pork_form2_AC_ext_city+P_pork_form2_AC_Int_city
+## extensive and intensive
+P_pork_form2_AC_ext<-P_pork_form2_AC_ext_Cde+P_pork_form2_AC_ext_city
+P_pork_form2_AC_Int<-P_pork_form2_AC_Int_Cde+P_pork_form2_AC_Int_city
+Tot_P_pork_form2_AC<-P_pork_form2_AC_ext+P_pork_form2_AC_Int
+```
+
+## Probability any pork meal from formal Slaughter is infected (after cooking) in the countryside and city: type 3
+```{r}
+## Countryside
+P_pork_form3_AC_ext_Cde<-P_pork_form3_BC_ext_Cde*undercooked
+P_pork_form3_AC_Int_Cde<-P_pork_form3_BC_Int_Cde*undercooked
+Tot_form3_AC_Cde<-P_pork_form3_AC_ext_Cde+P_pork_form3_AC_Int_Cde
+## City
+P_pork_form3_AC_ext_city<-P_pork_form3_BC_ext_city*undercooked
+P_pork_form3_AC_Int_city<-P_pork_form3_BC_Int_city*undercooked
+Tot_form3_AC_city<-P_pork_form3_AC_ext_city+P_pork_form3_AC_Int_city
+## extensive and intensive
+P_pork_form3_AC_ext<-P_pork_form3_AC_ext_Cde+P_pork_form3_AC_ext_city
+P_pork_form3_AC_Int<-P_pork_form3_AC_Int_Cde+P_pork_form3_AC_Int_city
+Tot_P_pork_form3_AC<-P_pork_form3_AC_ext+P_pork_form3_AC_Int
+```
+
+## Probability any pork meal from formal Slaughter is infected (after cooking) in the countryside and city: type 4
+```{r}
+## Countryside
+P_pork_form4_AC_ext_Cde<-P_pork_form4_BC_ext_Cde*undercooked
+P_pork_form4_AC_Int_Cde<-P_pork_form4_BC_Int_Cde*undercooked
+Tot_form4_AC_Cde<-P_pork_form4_AC_ext_Cde+P_pork_form4_AC_Int_Cde
+### City
+P_pork_form4_AC_ext_city<-P_pork_form4_BC_ext_city*undercooked
+P_pork_form4_AC_Int_city<-P_pork_form4_BC_Int_city*undercooked
+Tot_form4_AC_city<-P_pork_form4_AC_ext_city+P_pork_form4_AC_Int_city
+## extensive and intensive
+P_pork_form4_AC_ext<-P_pork_form4_AC_ext_Cde+P_pork_form4_AC_ext_city
+P_pork_form4_AC_Int<-P_pork_form4_AC_Int_Cde+P_pork_form4_AC_Int_city
+Tot_P_pork_form4_AC<-P_pork_form4_AC_ext+P_pork_form4_AC_Int
+```
+
+### Total risk for formal slaughter After cooking
+```{r}
+## Total countryside
+Tot_P_pork_AC_Cde<-Tot_form1_AC_Cde+Tot_form2_AC_Cde+Tot_form3_AC_Cde+Tot_form4_AC_Cde
+## Total city
+Tot_P_pork_AC_city<-Tot_form1_AC_city+Tot_form2_AC_city+Tot_form3_AC_city+Tot_form4_AC_city
+## extensive and intensive
+Tot_P_pork_AC_ext<-P_pork_form1_AC_ext+P_pork_form2_AC_ext+P_pork_form3_AC_ext+P_pork_form4_AC_ext
+Tot_P_pork_AC_int<-P_pork_form1_AC_Int+P_pork_form2_AC_Int+P_pork_form3_AC_Int+P_pork_form4_AC_Int
+## Total formal slaughter
+Tot_prob_infec_formal_AC<-Tot_P_pork_form1_AC+Tot_P_pork_form2_AC+Tot_P_pork_form3_AC+Tot_P_pork_form4_AC
+```
+
+### Total probability any pork is infective after cooking
+```{r}
+### total informal and formal slaughter
+Tot_prob_infective_AC<-Tot_prob_infec_Informal_AC+Tot_prob_infec_formal_AC
+Tot_prob_infective_AC_cde<-Total_inform_AC_Cde+Tot_P_pork_AC_Cde
+Tot_prob_infective_AC_city<-Total_inform_AC_city+Tot_P_pork_AC_city
+Tot_prob_infective_AC_ext<-Tot_prob_infec_Inform_AC_ext+Tot_P_pork_AC_ext
+Tot_prob_infective_AC_int<-Tot_prob_infec_Inform_AC_Int+Tot_P_pork_AC_int
+```
+
+### Number of pork meals infective after cooking
+```{r}
+N_meals_infective_AC <-Tot_meals*Tot_prob_infective_AC
+N_meals_infective_AC_form<-Tot_meals*Tot_prob_infec_formal_AC
+N_meals_infective_AC_inform<-Tot_meals*Tot_prob_infec_Informal_AC
+N_meals_infective_AC_ext<-Tot_meals*Tot_prob_infective_AC_ext
+N_meals_infective_AC_int<-Tot_meals*Tot_prob_infective_AC_int
+N_meals_infective_AC_cde<-Tot_meals*Tot_prob_infective_AC_cde
+N_meals_infective_AC_city<-Tot_meals*Tot_prob_infective_AC_city
+```
+
+### Overall Probability infective based on the frequencies of pork consumption
+```{r}
+Prob_infective_daily <- 1 - (1 - Tot_prob_infective_AC)^daily
+Prob_infective_weekly <- 1 - (1 - Tot_prob_infective_AC)^weekly
+Prob_infective_monthly <- 1 - (1 - Tot_prob_infective_AC)^monthly
+Prob_infective_yearly_1 <- 1 - (1 - Tot_prob_infective_AC)^yearly_1
+Prob_infective_yearly_2 <- 1 - (1 - Tot_prob_infective_AC)^yearly_2
+Prob_infective_yearly_3 <- 1 - (1 - Tot_prob_infective_AC)^Yearly_3
+Prob_infective_yearly_6 <- 1 - (1 - Tot_prob_infective_AC)^Yearly_6
+```
+
+### Population getting infected after consuming infective meals
+```{r}
+Pop_inf_daily<-Pop_eating_pork2*Daily_pork2*Prob_infective_daily
+Pop_inf_weekly<-Pop_eating_pork2*Weekly_pork2*Prob_infective_weekly
+Pop_inf_monthly<-Pop_eating_pork2*Month_pork2*Prob_infective_monthly
+Pop_inf_bimonthly<-Pop_eating_pork2*Year_pork6*Prob_infective_yearly_6
+Pop_inf_quarterly<-Pop_eating_pork2*Year_pork3*Prob_infective_yearly_3
+Pop_inf_semesterly<-Pop_eating_pork2*Year_pork2*Prob_infective_yearly_2
+Pop_inf_annually<-Pop_eating_pork2*Year_pork1*Prob_infective_yearly_1
+## Total Population exposed to T. solium taeniosis
+Tot_Population_inf <-Pop_inf_daily+Pop_inf_weekly+Pop_inf_monthly+
+  Pop_inf_bimonthly+Pop_inf_quarterly+Pop_inf_semesterly+Pop_inf_annually
+```
+
+### Infection based on infection intensity/ Informal slaughter
+```{r}
+Prob_light_infect_inform<-(PS5*Pmeal1*Viable_cyst*undercooked)+(PS6*Pmeal1*Viable_cyst*undercooked)+(PS7*Pmeal1*Viable_cyst*undercooked)+(PS8*Pmeal1*Viable_cyst*undercooked)
+Prob_moder_infect_inform<-(PS9*Pmeal2*Viable_cyst*undercooked)+(PS10*Pmeal2*Viable_cyst*undercooked)+(PS11*Pmeal2*Viable_cyst*undercooked)+(PS12*Pmeal2*Viable_cyst*undercooked)
+Prob_heavy_infect_inform<-(PS13*Pmeal3*Viable_cyst*undercooked)+(PS14*Pmeal3*Viable_cyst*undercooked)+(PS15*Pmeal3*Viable_cyst*undercooked)+(PS16*Pmeal3*Viable_cyst*undercooked)
+Tot_informal_infective<-Prob_light_infect_inform+Prob_moder_infect_inform+Prob_heavy_infect_inform
+```
+
+### Infection based on infection intensity/formal slaughter
+```{r}
+Prob_light_infect_form<-((PS21*Pmeal1*Viable_cyst)+(PS23*Pmeal1*Viable_cyst)+(PS25*Pmeal1*Viable_cyst)+(PS27*Pmeal1*Viable_cyst)+(PS49*Pmeal1*Viable_cyst)+(PS51*Pmeal1*Viable_cyst)+(PS53*Pmeal1*Viable_cyst)+(PS55*Pmeal1*Viable_cyst)+(PS77*Pmeal1*Viable_cyst)+(PS79*Pmeal1*Viable_cyst)+(PS81*Pmeal1*Viable_cyst)+(PS83*Pmeal1*Viable_cyst)+(PS105*Pmeal1*Viable_cyst)+(PS107*Pmeal1*Viable_cyst)+(PS109*Pmeal1*Viable_cyst)+(PS111*Pmeal1*Viable_cyst))*undercooked
+
+Prob_moder_infect_form<-((PS29*Pmeal2*Viable_cyst)+(PS31*Pmeal2*Viable_cyst)+(PS33*Pmeal2*Viable_cyst)+(PS35*Pmeal2*Viable_cyst)+(PS57*Pmeal2*Viable_cyst)+(PS59*Pmeal2*Viable_cyst)+(PS61*Pmeal2*Viable_cyst)+(PS63*Pmeal2*Viable_cyst)+(PS85*Pmeal2*Viable_cyst)+(PS87*Pmeal2*Viable_cyst)+(PS89*Pmeal2*Viable_cyst)+(PS91*Pmeal2*Viable_cyst)+(PS113*Pmeal2*Viable_cyst)+(PS115*Pmeal2*Viable_cyst)+(PS117*Pmeal2*Viable_cyst)+(PS119*Pmeal2*Viable_cyst))*undercooked
+
+Prob_heavy_infect_form<-((PS37*Pmeal3*Viable_cyst)+(PS39*Pmeal3*Viable_cyst)+(PS41*Pmeal3*Viable_cyst)+(PS43*Pmeal3*Viable_cyst)+(PS65*Pmeal3*Viable_cyst)+(PS67*Pmeal3*Viable_cyst)+(PS69*Pmeal3*Viable_cyst)+(PS71*Pmeal3*Viable_cyst)+(PS93*Pmeal3*Viable_cyst)+(PS95*Pmeal3*Viable_cyst)+(PS97*Pmeal3*Viable_cyst)+(PS99*Pmeal3*Viable_cyst)+(PS121*Pmeal3*Viable_cyst)+(PS123*Pmeal3*Viable_cyst)+(PS125*Pmeal3*Viable_cyst)+(PS127*Pmeal3*Viable_cyst))*undercooked
+
+Tot_formal_infective<-(Prob_light_infect_form+Prob_moder_infect_form+Prob_heavy_infect_form)
+```
+
+### SUMMARIES OF ESTIMATES
+```{r}
+Summary <-
+  function(x) {
+    print(c(mean = mean(x),
+            quantile(x, c(.025, .975))))
+  }
+```
+ 
+### PROBABILITY Distribution estimates
+```{r}
+Summary(pert_pork)
+Summary(meal_pig)
+Summary(Tot_meals)
+Summary(Tot_meal_form)
+Summary(Tot_meal_inform)
+Summary(Prev_Tp)
+Summary(Prev_ext_pig)
+Summary(Prev_int_pig)
+Summary(TP_Prev_ext)
+Summary(TP_Prev_int)
+Summary(Prev_MI)
+Summary (Prev_ext_MI)
+Summary (Prev_int_MI)
+Summary(TP_Prev_ext_MI)
+Summary(TP_Prev_int_MI)
+Summary(Light_Inf)
+Summary(Moderate_Inf)
+Summary(Heavy_Inf)
+Summary(Light_inform)
+Summary(Moder_inform)
+Summary(Heavy_inform)
+Summary(Condemned)
+Summary(Pmeal1)
+Summary(Pmeal2)
+Summary(Pmeal3)
+Summary(Viable_cyst)
+Summary(undercooked)
+Summary(pop_pork2)
+Summary(Pop_eating_pork2)
+Summary(Daily_pork2)
+Summary(Weekly_pork2)
+Summary(Month_pork2)
+Summary(Year_porktot)
+Summary(Year_pork1)
+Summary(Year_pork2)
+Summary (Year_pork3)
+Summary(Year_pork6)
+```
+
+### Estimation pigs informally and formally slaughtered according to farming systems
+```{r}
+Summary(Pig_slaughtered)
+Summary(Pig_ext_SE)
+Summary(Pig_Int)
+Summary(Pigs_Cons_Countryside)
+Summary(Pigs_cons_city)
+Summary(Pigs_slaug_inf_rural)
+Summary(Pigs_slaug_inf_city)
+Summary(Pig_slaug_form_ext_rural)
+Summary (Pig_slaug_form_ext_city)
+Summary (Pig_slaug_form_int_rural)
+Summary (Pig_slaug_form_int_city)
+Summary(Total_pigs_inform)
+Summary(Total_pigs_form)
+```
+
+### Total of probability of infections
+```{r}
+Summary(Tot_infection_form_Cde)
+Summary(Tot_infection_form_City)
+Summary(Tot_inf_formal)
+Summary(Tot_uninfected_form_Cde)
+Summary(Tot_uninfected_form_city)
+Summary(Tot_uninfected_form_Cde+Tot_uninfected_form_city)
+Summary(Tot_condem_form_Cde)
+Summary(Tot_condem_form_City)
+Summary(Tot_condem_form_Cde+Tot_condem_form_City)
+Summary(Tot_Infection_inform_Cde)
+Summary(Tot_Infection_inform_City)
+Summary(Tot_inf_informal)
+Summary(Tot_uninfected_inform_Cde)
+Summary(Tot_uninfected_inform_city)
+Summary(Tot_uninfected_inform_Cde+Tot_uninfected_inform_city)
+Summary(Tot_infection_form_Cde+Tot_uninfected_form_Cde+Tot_condem_form_Cde+Tot_Infection_inform_Cde+Tot_uninfected_inform_Cde)
+Summary(Tot_infection_form_City+Tot_uninfected_form_city+Tot_condem_form_City+Tot_Infection_inform_City+Tot_uninfected_inform_city)
+Summary(Tot_inf_formal+Tot_inf_informal+Tot_uninfected_form_Cde+Tot_uninfected_form_city+Tot_condem_form_Cde+Tot_condem_form_City+Tot_uninfected_inform_Cde+Tot_uninfected_inform_city)
+```
+
+### RIsk informal slaughter BC
+```{r}
+Summary(P_pork_inform_BC_ext_Cde)
+Summary(P_pork_inform_BC_Int_Cde)
+Summary(P_pork_inform_BC_ext_city)
+Summary(P_pork_inform_BC_Int_city)
+Summary(Total_inform_BC_Cde)
+Summary(Total_inform_BC_city)
+## EXTENSIVE
+Summary(P_pork_inform_BC_ext)
+## INTENSIVE
+Summary(P_pork_inform_BC_Int)
+## Total informal slaughter
+Summary(Tot_prob_infec_Informal_BC)
+```
+
+## Risk formal slaughter BC: Type 1
+```{r}
+Summary(P_pork_form1_BC_ext_Cde)
+Summary(P_pork_form1_BC_Int_Cde)
+Summary(P_pork_form1_BC_ext_city)
+Summary(P_pork_form1_BC_Int_city)
+Summary(P_pork_form1_BC_Cde)
+Summary(P_pork_form1_BC_city)
+Summary(P_pork_form1_BC_ext)
+Summary(P_pork_form1_BC_Int)
+Summary(Tot_P_pork_form1_BC)
+```
+
+## Risk formal slaughter BC: Type 2
+```{r}
+Summary(P_pork_form2_BC_ext_Cde)
+Summary(P_pork_form2_BC_Int_Cde)
+Summary(P_pork_form2_BC_ext_city)
+Summary(P_pork_form2_BC_Int_city)
+Summary(P_pork_form2_BC_Cde)
+Summary(P_pork_form2_BC_city)
+Summary(P_pork_form2_BC_ext)
+Summary(P_pork_form2_BC_Int)
+Summary(Tot_P_pork_form2_BC)
+```
+
+## Risk formal slaughter BC: Type 3
+```{r}
+Summary(P_pork_form3_BC_ext_Cde)
+Summary(P_pork_form3_BC_Int_Cde)
+Summary (P_pork_form3_BC_ext_city)
+Summary(P_pork_form3_BC_Int_city)
+Summary(P_pork_form3_BC_Cde)
+Summary(P_pork_form3_BC_city)
+Summary(P_pork_form3_BC_ext)
+Summary(P_pork_form3_BC_Int)
+Summary(Tot_P_pork_form3_BC)
+```
+
+## Risk formal slaughter BC: Type 4
+```{r}
+Summary(P_pork_form4_BC_ext_Cde)
+Summary(P_pork_form4_BC_Int_Cde)
+Summary(P_pork_form4_BC_ext_city)
+Summary(P_pork_form4_BC_Int_city)
+Summary(P_pork_form4_BC_Cde)
+Summary(P_pork_form4_BC_city)
+Summary(P_pork_form4_BC_ext)
+Summary(P_pork_form4_BC_Int)
+Summary(Tot_P_pork_form4_BC)
+```
+
+### Overall risk for formal salughter before cooking
+```{r}
+## Total countryside
+Summary(Tot_P_pork_BC_Cde)
+## Total city
+Summary(Tot_P_pork_BC_city)
+## extensive and intensive
+Summary(Tot_P_pork_BC_ext)
+Summary(Tot_P_pork_BC_int)
+## Total formal slaughter
+Summary(Tot_prob_infec_formal_BC)
+## Overall risk (formal+informal)
+Summary(Tot_prob_infec_BC)
+Summary(Tot_prob_infec_BC_cde)
+Summary(Tot_prob_infec_BC_city)
+Summary(Tot_prob_infec_BC_ext)
+Summary(Tot_prob_infec_BC_Int)
+```
+
+### Number of meals infective before cooking
+```{r}
+## Number of meals
+Summary(N_Meals_infective_BC)
+Summary(N_Meals_infective_BC_form)
+Summary(N_Meals_infective_BC_inform)
+Summary(N_Meals_infective_BC_cde)
+Summary(N_Meals_infective_BC_city)
+Summary(N_Meals_infective_BC_ext)
+Summary(N_Meals_infective_BC_int)
+Summary(N_meal_condemned)
+Summary(N_meal_condemned_cde)
+Summary(N_meal_condemned_city)
+```
+
+### Risk informal slaughter after cooking
+```{r}
+Summary(P_pork_inform_AC_ext_Cde)
+Summary(P_pork_inform_AC_Int_Cde)
+Summary(P_pork_inform_AC_ext_city)
+Summary(P_pork_inform_AC_Int_city)
+Summary(Total_inform_AC_Cde)
+Summary(Total_inform_AC_city)
+Summary(Tot_prob_infec_Inform_AC_ext)
+Summary(Tot_prob_infec_Inform_AC_Int)
+Summary(Tot_prob_infec_Informal_AC)
+```
+
+### Risk formal slaughter after cooking: TYPE 1
+```{r}
+## COUNTRYSIDE
+Summary(P_pork_form1_AC_ext_Cde)
+Summary(P_pork_form1_AC_Int_Cde)
+Summary(Tot_form1_AC_Cde)
+### CITY
+Summary(P_pork_form1_AC_ext_city)
+Summary(P_pork_form1_AC_Int_city)
+Summary(Tot_form1_AC_city)
+## Extensive AND intensive
+Summary(P_pork_form1_AC_ext)
+Summary(P_pork_form1_AC_Int)
+Summary(Tot_P_pork_form1_AC)
+```
+
+### Risk formal slaughter after cooking: TYPE 2
+```{r}
+## Countryside
+Summary(P_pork_form2_AC_ext_Cde)
+Summary(P_pork_form2_AC_Int_Cde)
+Summary(Tot_form2_AC_Cde)
+### CITY
+Summary(P_pork_form2_AC_ext_city)
+Summary(P_pork_form2_AC_Int_city)
+Summary(Tot_form2_AC_city)
+## extensive and intensive
+Summary(P_pork_form2_AC_ext)
+Summary(P_pork_form2_AC_Int)
+Summary(Tot_P_pork_form2_AC)
+```
+
+### Risk formal slaughter after cooking: TYPE 3
+```{r}
+## Countryside
+Summary(P_pork_form3_AC_ext_Cde)
+Summary(P_pork_form3_AC_Int_Cde)
+Summary(Tot_form3_AC_Cde)
+## City
+Summary(P_pork_form3_AC_ext_city)
+Summary(P_pork_form3_AC_Int_city)
+Summary(Tot_form3_AC_city)
+## extensive and intensive
+Summary(P_pork_form3_AC_ext)
+Summary(P_pork_form3_AC_Int)
+Summary(Tot_P_pork_form3_AC)
+```
+
+### Risk formal slaughter after cooking: TYPE 4
+```{r}
+## Countryside
+Summary(P_pork_form4_AC_ext_Cde)
+Summary(P_pork_form4_AC_Int_Cde)
+Summary(Tot_form4_AC_Cde)
+### City
+Summary(P_pork_form4_AC_ext_city)
+Summary(P_pork_form4_AC_Int_city)
+Summary(Tot_form4_AC_city)
+## extensive and intensive
+Summary(P_pork_form4_AC_ext)
+Summary(P_pork_form4_AC_Int)
+Summary(Tot_P_pork_form4_AC)
+```
+
+### Overall risk for formal slaughter after cooking
+```{r}
+## Total countryside
+Summary(Tot_P_pork_AC_Cde)
+## Total city
+Summary(Tot_P_pork_AC_city)
+## extensive and intensive
+Summary(Tot_P_pork_AC_ext)
+Summary(Tot_P_pork_AC_int)
+## Total formal slaughter
+Summary(Tot_prob_infec_formal_AC)
+## Overall risk from informal and formal slaughter
+Summary(Tot_prob_infective_AC)
+Summary(Tot_prob_infective_AC_cde)
+Summary(Tot_prob_infective_AC_city)
+Summary(Tot_prob_infective_AC_ext)
+Summary(Tot_prob_infective_AC_int)
+```
+
+### Number of PORK INFECTIVE AFTER COOKING
+```{r}
+Summary(N_meals_infective_AC)
+Summary(N_meals_infective_AC_form)
+Summary(N_meals_infective_AC_inform)
+Summary(N_meals_infective_AC_cde)
+Summary(N_meals_infective_AC_city)
+Summary(N_meals_infective_AC_ext)
+Summary(N_meals_infective_AC_int)
+```
+
+### Probability of infective for consuming pork daily, weekly, monthly, yearly
+```{r}
+Summary(Prob_infective_daily)
+Summary(Prob_infective_weekly)
+Summary(Prob_infective_monthly)
+Summary(Prob_infective_yearly_1)
+Summary(Prob_infective_yearly_2)
+Summary(Prob_infective_yearly_3)
+Summary(Prob_infective_yearly_6)
+```
+
+### Population getting infected after consuming infective meals
+```{r}
+Summary(Pop_inf_daily)
+Summary(Pop_inf_weekly)
+Summary(Pop_inf_monthly)
+Summary(Pop_inf_bimonthly)
+Summary(Pop_inf_quarterly)
+Summary(Pop_inf_semesterly)
+Summary(Pop_inf_annually)
+Summary(Tot_Population_inf)
+```
+
+### probability infective based on  infection intensity 
+```{r}
+Summary(Prob_light_infect_inform)
+Summary(Prob_moder_infect_inform)
+Summary(Prob_heavy_infect_inform)
+Summary(Tot_informal_infective)
+Summary(Prob_light_infect_form)
+Summary(Prob_moder_infect_form)
+Summary(Prob_heavy_infect_form)
+Summary(Tot_formal_infective)
+```
+
+### BAR PLOT FOR IMPORTANT SUMMARY ESTIMATES
+
+### BAR PLOT_ prob pork is infective after cooking
+```{r}
+library(ggplot2)
+# Parameters for A=formal, B=Informal, and C= Total
+A_mean <- 0.0086 
+A_lower <- 0.0033
+A_upper <- 0.0173
+B_mean <- 0.0108
+B_lower <- 0.0063
+B_upper <- 0.0169
+C_mean <- 0.0194 
+C_lower <- 0.0111
+C_upper <- 0.031
+
+### means and uncertainty intervals
+means_data <- data.frame(
+  group = c("Formal", "Informal", "Total"),
+  mean = c(A_mean, B_mean, C_mean),
+  lower = c(A_lower, B_lower, C_lower),
+  upper = c(A_upper, B_upper, C_upper)
+)
+
+#### A bar plot with uncertainty intervals
+ggplot(means_data, aes(x = group, y = mean, fill = group)) +
+  geom_bar(stat = "identity", alpha = 0.5, position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2, color = "black", position = position_dodge(0.7)) +
+  labs(
+       x = "Source of pork",
+       y = "Probability any pork is infective") +
+  scale_fill_manual(values = c("steelblue", "steelblue", "steelblue")) +scale_y_continuous(breaks = seq(0, 0.02, by = 0.005))+
+  theme_minimal() +
+  theme(panel.grid = element_blank(), legend.position = "none")
+```
+
+### BAR PLOT-INFECTIVE MEALS
+```{r}
+library(ggplot2)
+
+# Parameters for A=formal, B=Informal, and C= Total
+A_mean <- 804013 
+A_lower <- 292994
+A_upper <- 1711375
+B_mean <- 1015572 
+B_lower <- 510152
+B_upper <- 1853065 
+C_mean <- 1819585
+C_lower <- 919013
+C_upper <- 3310508
+
+### means and uncertainty intervals
+means_data <- data.frame(
+  group = c("Formal", "Informal", "Total"),
+  mean = c(A_mean, B_mean, C_mean),
+  lower = c(A_lower, B_lower, C_lower),
+  upper = c(A_upper, B_upper, C_upper)
+)
+
+#### A bar plot with uncertainty intervals
+ggplot(means_data, aes(x = group, y = mean, fill = group)) +
+  geom_bar(stat = "identity", alpha = 0.5, position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2, color = "black", position = position_dodge(0.7)) +
+  labs(
+    x = "Source of pork",
+    y = "Number of infective meals") +
+  scale_fill_manual(values = c("steelblue", "steelblue", "steelblue")) +scale_y_continuous(breaks = seq(0,2500000, by =500000))+
+  theme_minimal() +
+  theme(panel.grid = element_blank(), legend.position = "none")
+```
+
+### BAR PLOT - Frequency of pork consumption per year
+```{r}
+library(ggplot2)
+# Parameters for A= Daily, B=Weekly, and C= Monthly, D = Yearly_1, E=Yearly_2,
+# F= Yearly_3, G= Yearly_6
+
+A_mean <- 0.997
+A_lower <- 0.98
+A_upper <- 0.999
+B_mean <- 0.627 
+B_lower <- 0.44
+B_upper <- 0.807
+C_mean <- 0.208 
+C_lower <- 0.125
+C_upper <- 0.316
+D_mean <- 0.019 
+D_lower <- 0.011
+D_upper <- 0.031
+E_mean <- 0.038 
+E_lower <- 0.022
+E_upper <- 0.0613
+F_mean <- 0.057
+F_lower <- 0.033
+F_upper <- 0.091
+G_mean <- 0.111 
+G_lower <- 0.064
+G_upper <- 0.173
+
+### means and uncertainty intervals
+means_data <- data.frame(
+  group = c("Daily", "Weekly", "Monthly", "Yearly_1","Yearly_2", "Yearly_3", "Yearly_6"),
+  mean = c(A_mean, B_mean, C_mean, D_mean,E_mean, F_mean, G_mean ),
+  lower = c(A_lower, B_lower, C_lower, D_lower, E_lower, F_lower, G_lower),
+  upper = c(A_upper, B_upper, C_upper, D_upper, E_upper, F_upper, G_upper)
+)
+
+#### A bar plot with uncertainty intervals
+ggplot(means_data, aes(x = group, y = mean, fill = group)) +
+  geom_bar(stat = "identity", alpha = 0.5, position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2, color = "black", position = position_dodge(0.7)) +
+  labs(
+    x = "Frequency of pork consumption",
+    y = "Probability pork is infective") +
+  scale_fill_manual(values = c("steelblue", "steelblue", "steelblue","steelblue", "steelblue", "steelblue", "steelblue" )) +scale_y_continuous(breaks = seq(0,1, by =0.1))+
+  theme_minimal() +
+  theme(panel.grid = element_blank(), legend.position = "none")
+```
+
+### Number of meals based on location, slaughter, pig system
+```{r}
+library(ggplot2)
+# Parameters for A= Countryside, B=City, and C= Extensive, D = Intensive, E= Formal,
+# F= Informal, G= Condemned
+
+A_mean <- 1386259
+A_lower <- 707639
+A_upper <- 2503374
+B_mean <- 433326 
+B_lower <- 206130
+B_upper <- 820212
+C_mean <- 1781418
+C_lower <- 898947
+C_upper <- 3243227
+D_mean <- 38167 
+D_lower <- 18543
+D_upper <- 70895
+E_mean <- 804013
+E_lower <- 292994
+E_upper <- 1711375
+F_mean <- 1015572 
+F_lower <- 510152
+F_upper <- 1853065
+G_mean <- 311361
+G_lower <- 118129
+G_upper <- 663709
+
+### means and uncertainty intervals
+means_data <- data.frame(
+  group = c("Countryside", "City", "Extensive pig", "Intensive pig","Formal", "Informal", "Condemned"),
+  mean = c(A_mean, B_mean, C_mean, D_mean,E_mean, F_mean, G_mean ),
+  lower = c(A_lower, B_lower, C_lower, D_lower, E_lower, F_lower, G_lower),
+  upper = c(A_upper, B_upper, C_upper, D_upper, E_upper, F_upper, G_upper)
+)
+
+#### A bar plot with uncertainty intervals
+ggplot(means_data, aes(x = group, y = mean, fill = group)) +
+  geom_bar(stat = "identity", alpha = 0.5, position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2, color = "black", position = position_dodge(0.7)) +
+  labs(
+    x = "Description of meals",
+    y = "Number of infective meals") +
+  scale_fill_manual(values = c("steelblue", "steelblue", "steelblue","steelblue", "steelblue", "steelblue", "steelblue" )) +scale_y_continuous(breaks = seq(0,2000000, by =200000))+
+  theme_minimal() +
+  theme(panel.grid = element_blank(), legend.position = "none")
+```
+
+
+### Probability infective based on intensity of infection
+```{r}
+library(ggplot2)
+# Create the dataset with probabilities and ranges
+Infective_data <- data.frame(
+  Intensity = c("Light", "Moderate", "Heavy"),
+  Prob_Formal = c(0.0019, 0.0028, 0.0039),
+  CI_Formal_Lower = c(0.0007, 0.0009, 0.0013),
+  CI_Formal_Upper = c(0.0039, 0.0063, 0.0084),
+  Prob_informal = c(0.0009, 0.0040, 0.0059),
+  CI_Informal_Lower = c(0.0004, 0.0022, 0.0030),
+  CI_Informal_Upper = c(0.0016, 0.0064, 0.010)
+)
+
+# Convert data to long format for easy ggplot handling
+library(reshape2)
+Infective_data_long <- melt(Infective_data, id.vars = "Intensity")
+
+# Subset data for Formal and Informal separately
+Formal_data <- Infective_data[, c("Intensity", "Prob_Formal", "CI_Formal_Lower", "CI_Formal_Upper")]
+Formal_data$Type <- "Formal"
+names(Formal_data) <- c("Intensity", "Probability", "CI_Lower", "CI_Upper", "Type")
+
+Informal_data <- Infective_data[, c("Intensity", "Prob_informal", "CI_Informal_Lower", "CI_Informal_Upper")]
+Informal_data$Type <- "Informal"
+names(Informal_data) <- c("Intensity", "Probability", "CI_Lower", "CI_Upper", "Type")
+
+# Combine the data
+plot_data <- rbind(Formal_data, Informal_data)
+
+# Create the bar plot with error bars
+ggplot(plot_data, aes(x = Intensity, y = Probability, fill = Type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper), 
+                width = 0.2, position = position_dodge(0.9)) +
+  labs(
+       x = "Infection intensity",
+       y = "Probability pork is infective",
+       fill = "Type") +scale_fill_manual(values = c("Formal" = "steelblue", "Informal" = "turquoise"))+
+  theme_minimal()+theme(panel.grid = element_blank())
+```
+
+
+### SENSITIVITY ANALYSES
+### SENSITIVITY ANALYSIS FUNCTIONS
+```{r}
+## standardized regression coefficients
+sa_src <-
+function(y, x) {
+  df <- as.data.frame(apply(x, 2, scale))
+  summary(lm(scale(y) ~ ., data = df))
+}
+```
+
+## partial correlation coefficients
+```{r}
+## partial correlation coefficients
+sa_pcc <-
+function(y, x) {
+  out <- matrix(ncol = 2, nrow = ncol(x))
+  colnames(out) <- c("rho", "p")
+  rownames(out) <- colnames(x)
+
+  for (i in seq(ncol(x))){
+    lm_y <- lm(y ~ x[, -i])      # regress y to other x's
+    lm_x <- lm(x[, i] ~ x[, -i]) # regress x to other x's
+    out[i, ] <-
+      unlist(cor.test(lm_y$residuals, lm_x$residuals)[4:3],
+             use.names = FALSE)
+  }
+
+  return(out[order(abs(out[, "rho"]), decreasing = TRUE), ])
+}
+
+```
+
+### TORNADO GRAPH
+```{r}
+###
+library(ggplot2)
+
+## ggplot2
+tornado <-
+function(coef, names = NULL) {
+  ## copy names if needed
+  if (is.null(names)) names <- rownames(coef)
+
+  ## create data frame
+  df <- data.frame(est = coef[, "rho"],
+                   order = order(abs(coef[, "rho"])),
+                   name = names)
+
+  ## sort data frame
+  df <- df[df$order, ]
+
+  ## create ggplot
+  ggplot(df, aes(x = order, y = est)) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    scale_x_continuous(element_blank(),
+                       breaks = seq(nrow(df)),
+                       labels = df$name) +
+    scale_y_continuous("partial correlation coefficient",
+                       limits = c(min(0, min(df$est) - 0.1),
+                                  max(0, max(df$est) + 0.1))) +
+    geom_text(aes(x = order, y = est, label = formatC(est, 3, form = "f")),
+              size = 3,
+              hjust = ifelse(df$est > 0, -0.1, 1.1),
+              vjust = 0.4) +
+    theme_bw()
+}
+
+```
+
+### Load QMRA TS script
+### RISK AFTER COOKING
+```{r}
+## RISK AFTER COOKING
+sa_src(Tot_prob_infective_AC,
+       cbind(Prop_home_countryside, Prop_home_city,Prev_MI, Prev_Tp,
+             Prev_ext_MI,Prev_int_MI,  Prev_ext_pig, Prev_int_pig, Heavy_Inf, Moderate_Inf, Light_Inf, Heavy_inform, Moder_inform, Light_inform, Pmeal1, Pmeal2, Pmeal3, Viable_cyst, undercooked, meal_pig))
+
+sa_Risk_AC_pcc <-
+  sa_pcc(Tot_prob_infective_AC,
+         cbind(Prop_home_countryside, Prop_home_city,Prev_MI, Prev_Tp,
+             Prev_ext_MI,Prev_int_MI,  Prev_ext_pig, Prev_int_pig, Heavy_Inf, Moderate_Inf, Light_Inf, Heavy_inform, Moder_inform, Light_inform, Pmeal1, Pmeal2, Pmeal3, Viable_cyst, undercooked, meal_pig))
+               
+sa_Risk_AC_pcc
+
+## tornado graph
+Risk_AC_items <-
+  c( "Prop. undercooked pork", "Prop. heavy infection informal", "Prev. tongue palpation extensive farm", "Prop. heavy infection formal", "Prop. moderate infection formal", "Prop moderate infection informal", "Prop. light infection informal", "Prop. light infection formal",  "Prob. viable cyst", "Prev. tongue palpation intensive farm",  "Prob. meal light infection", "Overall prev. meat inspection", "Overall prev. tongue palpation in pig farms","Prob. meal moderate infection", "Prev. meat inspection intensive pig","Prob. meal heavy infection", "Prev. meat inspection extensive pig", "Prop. informal slaughter city", "Prop. informal slaughter countryside", "Meals per pig")
+
+png("sa_Risk_AC_pcc.png",  7, 3.5, units = "in", res = 400)
+tornado(sa_Risk_AC_pcc, Risk_AC_items)
+graphics.off()
+```
+
