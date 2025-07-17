@@ -215,19 +215,19 @@ Condemned<-rbeta(n,Condemned_alpha, Condemned_beta)
 
 ### Probability that one pork meal contains one cysticercus /light
 ```{r}
-Mean_Light_cyst<-24
+Mean_Light_cyst<-17
 Pmeal1 <- 1 - exp(-Mean_Light_cyst/meal_pig) 
 ```
 
 ### Probability that one pork meal contains one cysticercus/moderate
 ```{r}
-Mean_moderate_cyst<-588
+Mean_moderate_cyst<-408
 Pmeal2 <- 1 - exp(-Mean_moderate_cyst/meal_pig)
 ```
 
 ### Probability that one pork meal contains one cysticercus/heavy
 ```{r}
-Mean_heavy_cyst<-4822
+Mean_heavy_cyst<-3350
 Pmeal3 <- 1 - exp(-Mean_heavy_cyst/meal_pig)
 ```
 
@@ -917,28 +917,49 @@ Pop_inf_bimonthly<-Pop_eating_pork2*Year_pork6*Prob_infective_yearly_6
 Pop_inf_quarterly<-Pop_eating_pork2*Year_pork3*Prob_infective_yearly_3
 Pop_inf_semesterly<-Pop_eating_pork2*Year_pork2*Prob_infective_yearly_2
 Pop_inf_annually<-Pop_eating_pork2*Year_pork1*Prob_infective_yearly_1
+### Populataion when considering only once a year
+
+Pop_inf_annually_tot<-Pop_eating_pork2*Year_porktot*Prob_infective_yearly_1
+
 ## Total Population exposed to T. solium taeniosis
-Tot_Population_inf <-Pop_inf_daily+Pop_inf_weekly+Pop_inf_monthly+
+Tot_Population_inf_all <-Pop_inf_daily+Pop_inf_weekly+Pop_inf_monthly+
   Pop_inf_bimonthly+Pop_inf_quarterly+Pop_inf_semesterly+Pop_inf_annually
+Tot_Population_inf_year <-Pop_inf_daily+Pop_inf_weekly+Pop_inf_monthly+Pop_inf_annually_tot
 ```
 
-### Infection based on infection intensity/ Informal slaughter
+### Infection based on infection intensity before cooking/informal
 ```{r}
-Prob_light_infect_inform<-(PS5*Pmeal1*Viable_cyst*undercooked)+(PS6*Pmeal1*Viable_cyst*undercooked)+(PS7*Pmeal1*Viable_cyst*undercooked)+(PS8*Pmeal1*Viable_cyst*undercooked)
-Prob_moder_infect_inform<-(PS9*Pmeal2*Viable_cyst*undercooked)+(PS10*Pmeal2*Viable_cyst*undercooked)+(PS11*Pmeal2*Viable_cyst*undercooked)+(PS12*Pmeal2*Viable_cyst*undercooked)
-Prob_heavy_infect_inform<-(PS13*Pmeal3*Viable_cyst*undercooked)+(PS14*Pmeal3*Viable_cyst*undercooked)+(PS15*Pmeal3*Viable_cyst*undercooked)+(PS16*Pmeal3*Viable_cyst*undercooked)
-Tot_informal_infective<-Prob_light_infect_inform+Prob_moder_infect_inform+Prob_heavy_infect_inform
+Prob_light_infect_inform_bc <- (PS5*Pmeal1*Viable_cyst)+(PS6*Pmeal1*Viable_cyst)+(PS7*Pmeal1*Viable_cyst)+(PS8*Pmeal1*Viable_cyst)
+Prob_moder_infect_inform_bc<-(PS9*Pmeal2*Viable_cyst)+(PS10*Pmeal2*Viable_cyst)+(PS11*Pmeal2*Viable_cyst)+(PS12*Pmeal2*Viable_cyst)
+Prob_heavy_infect_inform_bc<-(PS13*Pmeal3*Viable_cyst)+(PS14*Pmeal3*Viable_cyst)+(PS15*Pmeal3*Viable_cyst)+(PS16*Pmeal3*Viable_cyst)
+Tot_informal_infective_bc<-Prob_light_infect_inform_bc+Prob_moder_infect_inform_bc+Prob_heavy_infect_inform_bc
+```
+### Infection based on infection intensity/ Informal slaughter after cooking
+```{r}
+Prob_light_infect_inform_ac<-(PS5*Pmeal1*Viable_cyst*undercooked)+(PS6*Pmeal1*Viable_cyst*undercooked)+(PS7*Pmeal1*Viable_cyst*undercooked)+(PS8*Pmeal1*Viable_cyst*undercooked)
+Prob_moder_infect_inform_ac<-(PS9*Pmeal2*Viable_cyst*undercooked)+(PS10*Pmeal2*Viable_cyst*undercooked)+(PS11*Pmeal2*Viable_cyst*undercooked)+(PS12*Pmeal2*Viable_cyst*undercooked)
+Prob_heavy_infect_inform_ac<-(PS13*Pmeal3*Viable_cyst*undercooked)+(PS14*Pmeal3*Viable_cyst*undercooked)+(PS15*Pmeal3*Viable_cyst*undercooked)+(PS16*Pmeal3*Viable_cyst*undercooked)
+Tot_informal_infective_ac<-Prob_light_infect_inform_ac+Prob_moder_infect_inform_ac+Prob_heavy_infect_inform_ac
 ```
 
-### Infection based on infection intensity/formal slaughter
+### Infection based on infection intensity/formal slaughter before cooking
 ```{r}
-Prob_light_infect_form<-((PS21*Pmeal1*Viable_cyst)+(PS23*Pmeal1*Viable_cyst)+(PS25*Pmeal1*Viable_cyst)+(PS27*Pmeal1*Viable_cyst)+(PS49*Pmeal1*Viable_cyst)+(PS51*Pmeal1*Viable_cyst)+(PS53*Pmeal1*Viable_cyst)+(PS55*Pmeal1*Viable_cyst)+(PS77*Pmeal1*Viable_cyst)+(PS79*Pmeal1*Viable_cyst)+(PS81*Pmeal1*Viable_cyst)+(PS83*Pmeal1*Viable_cyst)+(PS105*Pmeal1*Viable_cyst)+(PS107*Pmeal1*Viable_cyst)+(PS109*Pmeal1*Viable_cyst)+(PS111*Pmeal1*Viable_cyst))*undercooked
+Prob_light_infect_form_bc<-((PS21*Pmeal1*Viable_cyst)+(PS23*Pmeal1*Viable_cyst)+(PS25*Pmeal1*Viable_cyst)+(PS27*Pmeal1*Viable_cyst)+(PS49*Pmeal1*Viable_cyst)+(PS51*Pmeal1*Viable_cyst)+(PS53*Pmeal1*Viable_cyst)+(PS55*Pmeal1*Viable_cyst)+(PS77*Pmeal1*Viable_cyst)+(PS79*Pmeal1*Viable_cyst)+(PS81*Pmeal1*Viable_cyst)+(PS83*Pmeal1*Viable_cyst)+(PS105*Pmeal1*Viable_cyst)+(PS107*Pmeal1*Viable_cyst)+(PS109*Pmeal1*Viable_cyst)+(PS111*Pmeal1*Viable_cyst))
+Prob_moder_infect_form_bc<-((PS29*Pmeal2*Viable_cyst)+(PS31*Pmeal2*Viable_cyst)+(PS33*Pmeal2*Viable_cyst)+(PS35*Pmeal2*Viable_cyst)+(PS57*Pmeal2*Viable_cyst)+(PS59*Pmeal2*Viable_cyst)+(PS61*Pmeal2*Viable_cyst)+(PS63*Pmeal2*Viable_cyst)+(PS85*Pmeal2*Viable_cyst)+(PS87*Pmeal2*Viable_cyst)+(PS89*Pmeal2*Viable_cyst)+(PS91*Pmeal2*Viable_cyst)+(PS113*Pmeal2*Viable_cyst)+(PS115*Pmeal2*Viable_cyst)+(PS117*Pmeal2*Viable_cyst)+(PS119*Pmeal2*Viable_cyst))
+Prob_heavy_infect_form_bc<-((PS37*Pmeal3*Viable_cyst)+(PS39*Pmeal3*Viable_cyst)+(PS41*Pmeal3*Viable_cyst)+(PS43*Pmeal3*Viable_cyst)+(PS65*Pmeal3*Viable_cyst)+(PS67*Pmeal3*Viable_cyst)+(PS69*Pmeal3*Viable_cyst)+(PS71*Pmeal3*Viable_cyst)+(PS93*Pmeal3*Viable_cyst)+(PS95*Pmeal3*Viable_cyst)+(PS97*Pmeal3*Viable_cyst)+(PS99*Pmeal3*Viable_cyst)+(PS121*Pmeal3*Viable_cyst)+(PS123*Pmeal3*Viable_cyst)+(PS125*Pmeal3*Viable_cyst)+(PS127*Pmeal3*Viable_cyst))
 
-Prob_moder_infect_form<-((PS29*Pmeal2*Viable_cyst)+(PS31*Pmeal2*Viable_cyst)+(PS33*Pmeal2*Viable_cyst)+(PS35*Pmeal2*Viable_cyst)+(PS57*Pmeal2*Viable_cyst)+(PS59*Pmeal2*Viable_cyst)+(PS61*Pmeal2*Viable_cyst)+(PS63*Pmeal2*Viable_cyst)+(PS85*Pmeal2*Viable_cyst)+(PS87*Pmeal2*Viable_cyst)+(PS89*Pmeal2*Viable_cyst)+(PS91*Pmeal2*Viable_cyst)+(PS113*Pmeal2*Viable_cyst)+(PS115*Pmeal2*Viable_cyst)+(PS117*Pmeal2*Viable_cyst)+(PS119*Pmeal2*Viable_cyst))*undercooked
+Tot_formal_infective_bc<-(Prob_light_infect_form_bc+Prob_moder_infect_form_bc+Prob_heavy_infect_form_bc)
+```
 
-Prob_heavy_infect_form<-((PS37*Pmeal3*Viable_cyst)+(PS39*Pmeal3*Viable_cyst)+(PS41*Pmeal3*Viable_cyst)+(PS43*Pmeal3*Viable_cyst)+(PS65*Pmeal3*Viable_cyst)+(PS67*Pmeal3*Viable_cyst)+(PS69*Pmeal3*Viable_cyst)+(PS71*Pmeal3*Viable_cyst)+(PS93*Pmeal3*Viable_cyst)+(PS95*Pmeal3*Viable_cyst)+(PS97*Pmeal3*Viable_cyst)+(PS99*Pmeal3*Viable_cyst)+(PS121*Pmeal3*Viable_cyst)+(PS123*Pmeal3*Viable_cyst)+(PS125*Pmeal3*Viable_cyst)+(PS127*Pmeal3*Viable_cyst))*undercooked
+### Infection based on infection intensity/formal slaughter after cooking
+```{r}
+Prob_light_infect_form_ac<-((PS21*Pmeal1*Viable_cyst)+(PS23*Pmeal1*Viable_cyst)+(PS25*Pmeal1*Viable_cyst)+(PS27*Pmeal1*Viable_cyst)+(PS49*Pmeal1*Viable_cyst)+(PS51*Pmeal1*Viable_cyst)+(PS53*Pmeal1*Viable_cyst)+(PS55*Pmeal1*Viable_cyst)+(PS77*Pmeal1*Viable_cyst)+(PS79*Pmeal1*Viable_cyst)+(PS81*Pmeal1*Viable_cyst)+(PS83*Pmeal1*Viable_cyst)+(PS105*Pmeal1*Viable_cyst)+(PS107*Pmeal1*Viable_cyst)+(PS109*Pmeal1*Viable_cyst)+(PS111*Pmeal1*Viable_cyst))*undercooked
 
-Tot_formal_infective<-(Prob_light_infect_form+Prob_moder_infect_form+Prob_heavy_infect_form)
+Prob_moder_infect_form_ac<-((PS29*Pmeal2*Viable_cyst)+(PS31*Pmeal2*Viable_cyst)+(PS33*Pmeal2*Viable_cyst)+(PS35*Pmeal2*Viable_cyst)+(PS57*Pmeal2*Viable_cyst)+(PS59*Pmeal2*Viable_cyst)+(PS61*Pmeal2*Viable_cyst)+(PS63*Pmeal2*Viable_cyst)+(PS85*Pmeal2*Viable_cyst)+(PS87*Pmeal2*Viable_cyst)+(PS89*Pmeal2*Viable_cyst)+(PS91*Pmeal2*Viable_cyst)+(PS113*Pmeal2*Viable_cyst)+(PS115*Pmeal2*Viable_cyst)+(PS117*Pmeal2*Viable_cyst)+(PS119*Pmeal2*Viable_cyst))*undercooked
+
+Prob_heavy_infect_form_ac<-((PS37*Pmeal3*Viable_cyst)+(PS39*Pmeal3*Viable_cyst)+(PS41*Pmeal3*Viable_cyst)+(PS43*Pmeal3*Viable_cyst)+(PS65*Pmeal3*Viable_cyst)+(PS67*Pmeal3*Viable_cyst)+(PS69*Pmeal3*Viable_cyst)+(PS71*Pmeal3*Viable_cyst)+(PS93*Pmeal3*Viable_cyst)+(PS95*Pmeal3*Viable_cyst)+(PS97*Pmeal3*Viable_cyst)+(PS99*Pmeal3*Viable_cyst)+(PS121*Pmeal3*Viable_cyst)+(PS123*Pmeal3*Viable_cyst)+(PS125*Pmeal3*Viable_cyst)+(PS127*Pmeal3*Viable_cyst))*undercooked
+
+Tot_formal_infective_ac<-(Prob_light_infect_form_ac+Prob_moder_infect_form_ac+Prob_heavy_infect_form_ac)
 ```
 
 ### SUMMARIES OF ESTIMATES
@@ -1255,40 +1276,55 @@ Summary(Prob_infective_yearly_6)
 Summary(Pop_inf_daily)
 Summary(Pop_inf_weekly)
 Summary(Pop_inf_monthly)
+Summary(Pop_inf_annually_tot)
 Summary(Pop_inf_bimonthly)
 Summary(Pop_inf_quarterly)
 Summary(Pop_inf_semesterly)
 Summary(Pop_inf_annually)
-Summary(Tot_Population_inf)
+Summary(Tot_Population_inf_all)
+Summary(Tot_Population_inf_year)
 ```
 
-### probability infective based on  infection intensity 
+### probability infective based on  infection intensity before cooking
+
 ```{r}
-Summary(Prob_light_infect_inform)
-Summary(Prob_moder_infect_inform)
-Summary(Prob_heavy_infect_inform)
-Summary(Tot_informal_infective)
-Summary(Prob_light_infect_form)
-Summary(Prob_moder_infect_form)
-Summary(Prob_heavy_infect_form)
-Summary(Tot_formal_infective)
+Summary(Prob_light_infect_inform_bc)
+Summary(Prob_moder_infect_inform_bc)
+Summary(Prob_heavy_infect_inform_bc)
+Summary(Tot_informal_infective_bc)
+Summary(Prob_light_infect_form_bc)
+Summary(Prob_moder_infect_form_bc)
+Summary(Prob_heavy_infect_form_bc)
+Summary(Tot_formal_infective_bc)
+```
+
+### probability infective based on  infection intensity after cooking
+```{r}
+Summary(Prob_light_infect_inform_ac)
+Summary(Prob_moder_infect_inform_ac)
+Summary(Prob_heavy_infect_inform_ac)
+Summary(Tot_informal_infective_ac)
+Summary(Prob_light_infect_form_ac)
+Summary(Prob_moder_infect_form_ac)
+Summary(Prob_heavy_infect_form_ac)
+Summary(Tot_formal_infective_ac)
 ```
 
 ### BAR PLOT FOR IMPORTANT SUMMARY ESTIMATES
 
-### BAR PLOT_ prob pork is infective after cooking
+### BAR PLOT_ prob. pork is infective after cooking
 ```{r}
 library(ggplot2)
 # Parameters for A=formal, B=Informal, and C= Total
-A_mean <- 0.0086 
-A_lower <- 0.0033
-A_upper <- 0.0173
-B_mean <- 0.0108
-B_lower <- 0.0063
-B_upper <- 0.0169
-C_mean <- 0.0194 
-C_lower <- 0.0111
-C_upper <- 0.031
+A_mean <- 0.008  
+A_lower <- 0.003
+A_upper <- 0.016
+B_mean <- 0.010
+B_lower <- 0.006
+B_upper <- 0.016
+C_mean <- 0.018 
+C_lower <- 0.010
+C_upper <- 0.029
 
 ### means and uncertainty intervals
 means_data <- data.frame(
@@ -1315,15 +1351,15 @@ ggplot(means_data, aes(x = group, y = mean, fill = group)) +
 library(ggplot2)
 
 # Parameters for A=formal, B=Informal, and C= Total
-A_mean <- 804013 
-A_lower <- 292994
-A_upper <- 1711375
-B_mean <- 1015572 
-B_lower <- 510152
-B_upper <- 1853065 
-C_mean <- 1819585
-C_lower <- 919013
-C_upper <- 3310508
+A_mean <- 736956 
+A_lower <- 263097
+A_upper <- 1582614
+B_mean <- 964371 
+B_lower <- 497691
+B_upper <- 1739119 
+C_mean <-  1701327 
+C_lower <- 864720
+C_upper <- 3062707
 
 ### means and uncertainty intervals
 means_data <- data.frame(
@@ -1351,27 +1387,27 @@ library(ggplot2)
 # Parameters for A= Daily, B=Weekly, and C= Monthly, D = Yearly_1, E=Yearly_2,
 # F= Yearly_3, G= Yearly_6
 
-A_mean <- 0.997
+A_mean <- 0.996 
 A_lower <- 0.98
 A_upper <- 0.999
-B_mean <- 0.627 
-B_lower <- 0.44
-B_upper <- 0.807
-C_mean <- 0.208 
-C_lower <- 0.125
-C_upper <- 0.316
-D_mean <- 0.019 
-D_lower <- 0.011
-D_upper <- 0.031
-E_mean <- 0.038 
-E_lower <- 0.022
-E_upper <- 0.0613
-F_mean <- 0.057
-F_lower <- 0.033
-F_upper <- 0.091
-G_mean <- 0.111 
-G_lower <- 0.064
-G_upper <- 0.173
+B_mean <- 0.603
+B_lower <- 0.42
+B_upper <- 0.786
+C_mean <- 0.196 
+C_lower <- 0.12
+C_upper <- 0.299
+D_mean <- 0.018 
+D_lower <- 0.01
+D_upper <- 0.029
+E_mean <- 0.036 
+E_lower <- 0.02
+E_upper <- 0.058
+F_mean <- 0.054
+F_lower <- 0.03
+F_upper <- 0.085
+G_mean <- 0.10 
+G_lower <- 0.06
+G_upper <- 0.163
 
 ### means and uncertainty intervals
 means_data <- data.frame(
@@ -1393,54 +1429,96 @@ ggplot(means_data, aes(x = group, y = mean, fill = group)) +
   theme(panel.grid = element_blank(), legend.position = "none")
 ```
 
-### Number of meals based on location, slaughter, pig system
+### Number of meals based on location, slaughter, pig system after cooking
 ```{r}
 library(ggplot2)
-# Parameters for A= Countryside, B=City, and C= Extensive, D = Intensive, E= Formal,
-# F= Informal, G= Condemned
+# Parameters for A= Countryside, B= City, and C= Extensive, D = Intensive, E= Formal,
+# F= Informal
 
-A_mean <- 1386259
-A_lower <- 707639
-A_upper <- 2503374
-B_mean <- 433326 
-B_lower <- 206130
-B_upper <- 820212
-C_mean <- 1781418
-C_lower <- 898947
-C_upper <- 3243227
-D_mean <- 38167 
-D_lower <- 18543
-D_upper <- 70895
-E_mean <- 804013
-E_lower <- 292994
-E_upper <- 1711375
-F_mean <- 1015572 
-F_lower <- 510152
-F_upper <- 1853065
-G_mean <- 311361
-G_lower <- 118129
-G_upper <- 663709
+A_mean <- 1298783  
+A_lower <- 669848
+A_upper <- 2319713
+B_mean <- 402544
+B_lower <- 191630
+B_upper <- 756661
+C_mean <- 1665624 
+C_lower <- 846151
+C_upper <- 2998891
+D_mean <-  35703 
+D_lower <- 17410
+D_upper <- 65685
+E_mean <- 736956 
+E_lower <- 263097
+E_upper <- 1582614
+F_mean <- 964371
+F_lower <- 497691
+F_upper <- 1739119
 
 ### means and uncertainty intervals
 means_data <- data.frame(
-  group = c("Countryside", "City", "Extensive pig", "Intensive pig","Formal", "Informal", "Condemned"),
-  mean = c(A_mean, B_mean, C_mean, D_mean,E_mean, F_mean, G_mean ),
-  lower = c(A_lower, B_lower, C_lower, D_lower, E_lower, F_lower, G_lower),
-  upper = c(A_upper, B_upper, C_upper, D_upper, E_upper, F_upper, G_upper)
-)
+  group = c("Countryside", "City", "Extensive pig", "Intensive pig","Formal", "Informal"),
+  mean = c(A_mean, B_mean, C_mean, D_mean,E_mean, F_mean),
+  lower = c(A_lower, B_lower, C_lower, D_lower, E_lower, F_lower),
+  upper = c(A_upper, B_upper, C_upper, D_upper, E_upper, F_upper))
 
 #### A bar plot with uncertainty intervals
 ggplot(means_data, aes(x = group, y = mean, fill = group)) +
   geom_bar(stat = "identity", alpha = 0.5, position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2, color = "black", position = position_dodge(0.7)) +
   labs(
-    x = "Description of meals",
-    y = "Number of infective meals") +
-  scale_fill_manual(values = c("steelblue", "steelblue", "steelblue","steelblue", "steelblue", "steelblue", "steelblue" )) +scale_y_continuous(breaks = seq(0,2000000, by =200000))+
+    x = "Source of pork meals ",
+    y = "Number of infective meals after cooking") +
+  scale_fill_manual(values = c("steelblue", "steelblue", "steelblue","steelblue", "steelblue", "steelblue" )) +scale_y_continuous(breaks = seq(0,2000000, by =200000))+
   theme_minimal() +
   theme(panel.grid = element_blank(), legend.position = "none")
 ```
 
+### Number of meals based on location, slaughter, pig system before cooking
+```{r}
+library(ggplot2)
+# Parameters for A= Countryside, B= City, and C= Extensive, D = Intensive, E= Formal,
+# F= Informal, G= Condemned  
+
+A_mean <- 6964318
+A_lower <- 4184130
+A_upper <- 11464638
+B_mean <- 2158580 
+B_lower <- 1179805
+B_upper <- 3784519
+C_mean <- 8931456 
+C_lower <- 5280898
+C_upper <- 14870480
+D_mean <- 191442 
+D_lower <- 106473
+D_upper <- 325402
+E_mean <- 3951971 
+E_lower <- 1550310
+E_upper <- 8007697
+F_mean <- 5170927 
+F_lower <- 3091039
+F_upper <- 8572059
+G_mean <-  311820 
+G_lower <- 117775
+G_upper <- 661994
+
+### means and uncertainty intervals
+means_data <- data.frame(
+  group = c("Countryside", "City", "Ext. pig", "Int. pig","Formal", "Informal", "Condemned"),
+  mean = c(A_mean, B_mean, C_mean, D_mean,E_mean, F_mean, G_mean),
+  lower = c(A_lower, B_lower, C_lower, D_lower, E_lower, F_lower, G_lower),
+  upper = c(A_upper, B_upper, C_upper, D_upper, E_upper, F_upper, G_upper))
+
+#### A bar plot with uncertainty intervals
+ggplot(means_data, aes(x = group, y = mean, fill = group)) +
+  geom_bar(stat = "identity", alpha = 0.5, position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2, color = "black", position = position_dodge(0.7)) +
+  labs(
+    x = "Source of pork meals",
+    y = "Number of infective meals before cooking") +
+  scale_fill_manual(values = c("steelblue", "steelblue", "steelblue","steelblue", "steelblue", "steelblue", "steelblue", "steelblue" )) +scale_y_continuous(breaks = seq(0,10000000, by =800000))+
+  theme_minimal() +
+  theme(panel.grid = element_blank(), legend.position = "none")
+```
 
 ### Probability infective based on intensity of infection
 ```{r}
@@ -1448,12 +1526,12 @@ library(ggplot2)
 # Create the dataset with probabilities and ranges
 Infective_data <- data.frame(
   Intensity = c("Light", "Moderate", "Heavy"),
-  Prob_Formal = c(0.0019, 0.0028, 0.0039),
-  CI_Formal_Lower = c(0.0007, 0.0009, 0.0013),
-  CI_Formal_Upper = c(0.0039, 0.0063, 0.0084),
-  Prob_informal = c(0.0009, 0.0040, 0.0059),
-  CI_Informal_Lower = c(0.0004, 0.0022, 0.0030),
-  CI_Informal_Upper = c(0.0016, 0.0064, 0.010)
+  Prob_Formal = c(0.0014, 0.0026, 0.004),
+  CI_Formal_Lower = c(0.0006, 0.0008, 0.0013),
+  CI_Formal_Upper = c(0.0028, 0.006, 0.0085),
+  Prob_informal = c(0.0006, 0.0036, 0.0058),
+  CI_Informal_Lower = c(0.0003, 0.002, 0.003),
+  CI_Informal_Upper = c(0.001, 0.006, 0.010)
 )
 
 # Convert data to long format for easy ggplot handling
@@ -1544,7 +1622,7 @@ function(coef, names = NULL) {
     scale_x_continuous(element_blank(),
                        breaks = seq(nrow(df)),
                        labels = df$name) +
-    scale_y_continuous("partial correlation coefficient",
+    scale_y_continuous("Partial correlation coefficient",
                        limits = c(min(0, min(df$est) - 0.1),
                                   max(0, max(df$est) + 0.1))) +
     geom_text(aes(x = order, y = est, label = formatC(est, 3, form = "f")),
@@ -1561,19 +1639,17 @@ function(coef, names = NULL) {
 ```{r}
 ## RISK AFTER COOKING
 sa_src(Tot_prob_infective_AC,
-       cbind(Prop_home_countryside, Prop_home_city,Prev_MI, Prev_Tp,
-             Prev_ext_MI,Prev_int_MI,  Prev_ext_pig, Prev_int_pig, Heavy_Inf, Moderate_Inf, Light_Inf, Heavy_inform, Moder_inform, Light_inform, Pmeal1, Pmeal2, Pmeal3, Viable_cyst, undercooked, meal_pig))
+       cbind(Prev_MI, Prev_Tp, Prev_ext_MI, Prev_ext_pig, Prev_int_pig, Heavy_Inf, Moderate_Inf, Light_Inf, Heavy_inform, Moder_inform, Pmeal1, Pmeal2, Pmeal3, Viable_cyst, undercooked, meal_pig))
 
 sa_Risk_AC_pcc <-
   sa_pcc(Tot_prob_infective_AC,
-         cbind(Prop_home_countryside, Prop_home_city,Prev_MI, Prev_Tp,
-             Prev_ext_MI,Prev_int_MI,  Prev_ext_pig, Prev_int_pig, Heavy_Inf, Moderate_Inf, Light_Inf, Heavy_inform, Moder_inform, Light_inform, Pmeal1, Pmeal2, Pmeal3, Viable_cyst, undercooked, meal_pig))
+         cbind(Prev_MI, Prev_Tp, Prev_ext_MI, Prev_ext_pig, Prev_int_pig, Heavy_Inf, Moderate_Inf, Light_Inf, Heavy_inform, Moder_inform, Pmeal1, Pmeal2, Pmeal3, Viable_cyst, undercooked, meal_pig))
                
 sa_Risk_AC_pcc
 
 ## tornado graph
 Risk_AC_items <-
-  c( "Prop. undercooked pork", "Prop. heavy infection informal", "Prev. tongue palpation extensive farm", "Prop. heavy infection formal", "Prop. moderate infection formal", "Prop moderate infection informal", "Prop. light infection informal", "Prop. light infection formal",  "Prob. viable cyst", "Prev. tongue palpation intensive farm",  "Prob. meal light infection", "Overall prev. meat inspection", "Overall prev. tongue palpation in pig farms","Prob. meal moderate infection", "Prev. meat inspection intensive pig","Prob. meal heavy infection", "Prev. meat inspection extensive pig", "Prop. informal slaughter city", "Prop. informal slaughter countryside", "Meals per pig")
+  c( "Prop. undercooked pork", "Prev. meat inspection extensive pig","Prop. heavy infection informal", "Prev. tongue palpation extensive farm", "Prop. heavy infection formal", "Prop. moderate infection formal", "Prop. moderate infection informal", "Prop. light infection formal", "Prob. viable cyst", "Prob. meal light infection","Prev. tongue palpation intensive farm", "Meals per pig", "Prob. meal heavy infection", "Prob. meal moderate infection", "Overall prev. meat inspection", "Overall prev. tongue palpation in pig")
 
 png("sa_Risk_AC_pcc.png",  7, 3.5, units = "in", res = 400)
 tornado(sa_Risk_AC_pcc, Risk_AC_items)
